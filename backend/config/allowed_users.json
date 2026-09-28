@@ -1,0 +1,28 @@
+{
+  "max_allowed_users": 2,
+  "platform_name": "LinguaSphere AI",
+  "description": "Configuration file for authorized platform users. Swapna Aleti is the Primary Administrator.",
+  "allowed_users": [
+    {
+      "email": "swapnaaleti4206@gmail.com",
+      "name": "Swapna Aleti",
+      "role": "admin",
+      "level": "intermediate",
+      "added_at": "2026-09-28T00:00:00Z",
+      "notes": "Primary Administrator and Platform Owner"
+    },
+    {
+      "email": "mounikasavitri371@gmail.com",
+      "name": "Mounika Savitri",
+      "role": "user",
+      "level": "beginner",
+      "added_at": "2026-09-28T00:00:00Z",
+      "notes": "Second Authorized Learner"
+    }
+  ],
+  "security_settings": {
+    "default_passcode": "swapp@123",
+    "require_passcode": true,
+    "allow_demo_one_click": true
+  }
+}
