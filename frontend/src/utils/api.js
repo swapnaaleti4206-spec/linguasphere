@@ -1,5 +1,8 @@
 // API Client Helper for LinguaSphere AI
 
+// Default production Render backend fallback
+const PRODUCTION_BACKEND_URL = 'https://linguasphere-ba3h.onrender.com/api';
+
 export function getApiBase() {
   const custom = localStorage.getItem('custom_backend_url');
   if (custom && custom.trim()) {
@@ -12,6 +15,10 @@ export function getApiBase() {
     let u = envUrl.trim().replace(/\/+$/, '');
     if (!u.endsWith('/api')) u = `${u}/api`;
     return u;
+  }
+  // If running on Vercel production, automatically point to your live Render backend!
+  if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+    return PRODUCTION_BACKEND_URL;
   }
   return '/api';
 }
