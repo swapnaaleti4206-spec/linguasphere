@@ -23,23 +23,14 @@ class UserResponse(BaseModel):
 @router.get("/config-preview")
 def get_allowed_preview():
     """
-    Public endpoint displaying allowed emails and current limits
-    for transparency and convenient private-use login.
+    Public endpoint displaying high-level system status and limits.
+    Does not expose sensitive credentials or email lists.
     """
     cfg = get_allowed_config()
     return {
         "max_allowed_users": cfg.get("max_allowed_users", 2),
         "total_authorized": len(cfg.get("allowed_users", [])),
-        "demo_accounts": [
-            {
-                "email": u.get("email"),
-                "name": u.get("name"),
-                "role": u.get("role", "user"),
-                "level": u.get("level", "intermediate")
-            }
-            for u in cfg.get("allowed_users", [])
-        ],
-        "default_passcode": cfg.get("security_settings", {}).get("default_passcode", "english2026")
+        "status": "ready"
     }
 
 @router.post("/login")
@@ -84,11 +75,11 @@ async def login(req: LoginRequest):
                 now
             )
         )
-        # Initialize learning stats
+        # Initialize learning stats at true baseline 0
         await execute_commit(
             """
             INSERT INTO learning_stats (user_id, streak_days, last_active_date, lessons_completed, words_learned)
-            VALUES (?, 1, ?, 1, 5)
+            VALUES (?, 0, ?, 0, 0)
             """,
             (user_id, now)
         )
