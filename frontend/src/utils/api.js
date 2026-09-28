@@ -1,6 +1,5 @@
 // API Client Helper for LinguaSphere AI
 
-// Default production Render backend fallback
 const PRODUCTION_BACKEND_URL = 'https://linguasphere-ba3h.onrender.com/api';
 
 export function getApiBase() {
@@ -16,7 +15,6 @@ export function getApiBase() {
     if (!u.endsWith('/api')) u = `${u}/api`;
     return u;
   }
-  // If running on Vercel production, automatically point to your live Render backend!
   if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
     return PRODUCTION_BACKEND_URL;
   }
@@ -77,7 +75,7 @@ async function request(endpoint, options = {}) {
     response = await fetch(targetUrl, config);
   } catch (netErr) {
     throw new Error(
-      `Cannot connect to backend server at ${apiBase}. Please check your backend link or connection.`
+      `Cannot connect to backend server at ${apiBase}. Please check your connection.`
     );
   }
 
@@ -100,11 +98,9 @@ async function request(endpoint, options = {}) {
     const text = await response.text();
     if (!response.ok) {
       if (response.status === 404) {
-        throw new Error(
-          `Backend route not found at ${targetUrl}. Make sure your Render backend URL is configured correctly.`
-        );
+        throw new Error(`Route not found at ${targetUrl}.`);
       }
-      throw new Error(`Server returned error (${response.status}): ${text.slice(0, 100)}`);
+      throw new Error(`Server returned error (${response.status})`);
     }
   }
 
@@ -124,7 +120,7 @@ export const api = {
   }),
   getMe: () => request('/auth/me'),
 
-  // Learning (Multilingual)
+  // Learning
   sendMessage: (sessionId, message, level = 'intermediate', language = 'english', englishOnly = true, mode = 'tutor') =>
     request('/learning/chat', {
       method: 'POST',
@@ -152,13 +148,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ task_type: taskType, user_input: userInput, tone, language }),
     }),
-  evaluateWriting: (text, prompt = '', taskType = 'essay', language = 'english') =>
-    request('/learning/writing-evaluate', {
-      method: 'POST',
-      body: JSON.stringify({ text, prompt, task_type: taskType, language }),
-    }),
-  getReadingExercises: (level = 'intermediate') => request(`/learning/reading-exercises?level=${level}`),
-  getRecommendations: () => request('/learning/recommendations'),
+  getTeluguQuizzes: (language = 'english') => request(`/learning/telugu-quizzes?language=${language}`),
+  completeTask: (taskName, language = 'english', score = 100) => request('/learning/complete-task', {
+    method: 'POST',
+    body: JSON.stringify({ task_name: taskName, language, score }),
+  }),
 
   // Dashboard
   getDashboardStats: () => request('/dashboard/stats'),

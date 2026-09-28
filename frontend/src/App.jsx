@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStoredUser, clearStoredAuth } from './utils/api';
+import { getStoredUser, clearStoredAuth, api } from './utils/api';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import TutorChat from './pages/TutorChat';
 import GrammarLab from './pages/GrammarLab';
 import VocabBuilder from './pages/VocabBuilder';
+import TeluguQuiz from './pages/TeluguQuiz';
 import DailyPractice from './pages/DailyPractice';
 import SpeakingPractice from './pages/SpeakingPractice';
 import WritingAssistants from './pages/WritingAssistants';
@@ -18,14 +19,27 @@ export default function App() {
   const [user, setUser] = useState(getStoredUser());
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [selectedLevel, setSelectedLevel] = useState(user?.level || 'intermediate');
-  const [selectedLanguage, setSelectedLanguage] = useState('english'); // 'english', 'german', 'korean'
-  const [streak, setStreak] = useState(3);
+  const [selectedLanguage, setSelectedLanguage] = useState('english');
+  const [streak, setStreak] = useState(0); // Starts at 0 real-time
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Load real user streak from database
+  useEffect(() => {
+    if (user) {
+      api.getDashboardStats()
+        .then((stats) => {
+          if (stats && typeof stats.streak_days === 'number') {
+            setStreak(stats.streak_days);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user]);
 
   useEffect(() => {
     const handleUnauthorized = () => {
@@ -44,6 +58,7 @@ export default function App() {
   function handleLogout() {
     clearStoredAuth();
     setUser(null);
+    setStreak(0);
   }
 
   function toggleTheme() {
@@ -89,6 +104,9 @@ export default function App() {
           )}
           {currentTab === 'vocab' && (
             <VocabBuilder level={selectedLevel} language={selectedLanguage} />
+          )}
+          {currentTab === 'telugu' && (
+            <TeluguQuiz language={selectedLanguage} onStreakUpdated={setStreak} />
           )}
           {currentTab === 'daily' && (
             <DailyPractice level={selectedLevel} language={selectedLanguage} />

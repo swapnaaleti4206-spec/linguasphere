@@ -8,12 +8,8 @@ from app.core.config import OPENAI_API_KEY, GROQ_API_KEY, GEMINI_API_KEY
 class MultilingualAIService:
     """
     Intelligent Multilingual Learning AI Engine for:
-    - English (US/UK)
-    - German (Deutsch)
-    - Korean (한국어)
-
-    Provides conversational tutoring, grammar analysis, speech coaching,
-    vocabulary building with Hanja/Romanization and German genders (der/die/das).
+    - English, German, and Korean
+    - Telugu Translation Quizzes (Two-way: Target Language <-> Telugu)
     """
 
     def __init__(self):
@@ -22,7 +18,6 @@ class MultilingualAIService:
         self.gemini_key = GEMINI_API_KEY.strip() if GEMINI_API_KEY else None
 
     def _call_external_llm(self, system_prompt: str, user_prompt: str) -> str | None:
-        """Attempts to call Groq or OpenAI if keys are present."""
         if self.groq_key:
             try:
                 headers = {"Authorization": f"Bearer {self.groq_key}", "Content-Type": "application/json"}
@@ -73,8 +68,8 @@ class MultilingualAIService:
             f"You are LinguaSphere AI, a world-class language tutor specializing in {target_lang}. "
             f"The learner's proficiency is '{level}'.\n"
             f"1. Respond naturally in {target_lang}, adapted to '{level}' level.\n"
-            f"2. Provide an English translation hint or cultural context if helpful.\n"
-            f"3. Kindly point out any grammar or particle/conjugation mistakes in a 'Grammar Tip'.\n"
+            f"2. Provide an English or Telugu translation hint if helpful.\n"
+            f"3. Kindly point out any grammar mistakes in a 'Grammar Tip'.\n"
             f"4. Propose 1 natural phrase improvement."
         )
 
@@ -89,7 +84,6 @@ class MultilingualAIService:
                 "level": level
             }
 
-        # Built-in Pedagogical responses
         return self._local_multilingual_tutor(user_message, level, language)
 
     def _local_multilingual_tutor(self, text: str, level: str, language: str) -> dict:
@@ -99,38 +93,37 @@ class MultilingualAIService:
         if language == "german":
             if any(w in lower for w in ["hallo", "guten tag", "hi", "servus"]):
                 reply = (
-                    "Hallo und herzlich willkommen! 🇩🇪 Ich bin dein LinguaSphere Deutsch-Tutor. "
+                    "Hallo Swapna! Willkommen beim LinguaSphere Deutsch-Tutor. 🇩🇪 "
                     "Wie geht es dir heute? Worüber möchtest du sprechen oder welche Grammatikregel möchtest du üben?"
                 )
             else:
                 reply = (
-                    f"Sehr gut ausgedrückt! Auf Deutsch ist die Satzstellung (Verberst-, Verbzweitstellung) besonders wichtig. "
-                    f"Um deine Ausdrucksweise noch natürlicher zu gestalten, könntest du Konnektoren wie 'außerdem', 'allerdings' oder 'meiner Meinung nach' einbauen. "
-                    f"Was denkst du darüber?"
+                    "Sehr gut ausgedrückt! Auf Deutsch ist die Satzstellung besonders wichtig. "
+                    "Um noch natürlicher zu klingen, könntest du 'außerdem' oder 'meiner Meinung nach' einbauen. "
+                    "Was denkst du darüber?"
                 )
         elif language == "korean":
-            if any(w in text for w in ["안녕", "안녕하세요", "반가워", "반갑습니다"]):
+            if any(w in text for w in ["안녕", "안녕하세요", "반가워"]):
                 reply = (
-                    "안녕하세요! 만나서 반갑습니다! 🇰🇷 저는 당신의 링구아스피어(LinguaSphere) 한국어 튜터입니다. "
+                    "안녕하세요, 스왑나(Swapna)님! 링구아스피어 AI 한국어 튜터입니다. 🇰🇷 "
                     "오늘 기분이 어떠세요? 한국어 대화, 문법, 또는 일상 표현 중 어떤 것을 연습하고 싶으신가요?"
                 )
             else:
                 reply = (
-                    f"정말 잘 말씀하셨어요! 한국어에서는 존댓말(예: -아/어요, -습니다)과 적절한 조사(은/는, 이/가, 을/를)의 사용이 매우 중요합니다. "
-                    f"더 자연스러운 표현으로 '제 생각에는...', '예를 들면...' 같은 연결어를 덧붙이면 훨씬 유창해 보입니다. "
-                    f"다음에는 어떤 이야기를 더 해보고 싶으신가요?"
+                    "정말 잘 말씀하셨어요! 한국어에서는 존댓말과 적절한 조사(은/는, 이/가, 을/를)의 사용이 매우 중요합니다. "
+                    "다음에는 어떤 일상 표현이나 질문을 연습해 볼까요?"
                 )
         else: # English
             if any(w in lower for w in ["hello", "hi", "hey", "good morning"]):
                 reply = (
-                    "Hello and welcome! 🌟 I'm your LinguaSphere AI Tutor. "
-                    "How are you doing today, and what communication goal or topic should we explore?"
+                    "Hello Swapna! Welcome to your LinguaSphere AI English Studio. 🌟 "
+                    "How are you doing today? We can practice conversation, grammar, interview preparation, or translation quizzes!"
                 )
             else:
                 reply = (
-                    f"That's a thoughtful point! Your sentence structure is coming along nicely. "
-                    f"To make your thought even more articulate, try adding transitional phrasing like 'In my assessment' or 'Furthermore'. "
-                    f"Could you tell me more about that?"
+                    "That's a thoughtful point! Your sentence structure is coming along nicely. "
+                    "To sound even more articulate, try connecting ideas using transition phrases like 'Furthermore' or 'In my perspective'. "
+                    "Could you elaborate a bit more on that?"
                 )
 
         return {
@@ -152,17 +145,16 @@ class MultilingualAIService:
 
         if language == "german":
             rules = [
-                (r"\bich bin gut\b", "mir geht es gut", "In German, say 'Mir geht es gut' instead of 'Ich bin gut' (which implies being morally virtuous).", "Idiomatic Usage"),
-                (r"\bdas wetter ist gut heute\b", "Das Wetter ist heute gut", "Time expressions ('heute') usually precede the predicate adjective ('gut').", "Word Order (TeKaMoLo)"),
-                (r"\bfür was\b", "wofür", "Use the pronominal adverb 'wofür' instead of 'für was'.", "Pronominal Adverbs"),
-                (r"\bin 2026\b", "im Jahr 2026 / 2026", "In German, write years either bare ('2026') or as 'im Jahr 2026', not 'in 2026'.", "Preposition Usage")
+                (r"\bich bin gut\b", "mir geht es gut", "In German, say 'Mir geht es gut' instead of 'Ich bin gut'.", "Idiomatic Usage"),
+                (r"\bdas wetter ist gut heute\b", "Das Wetter ist heute gut", "Time expressions ('heute') usually precede the predicate adjective ('gut').", "Word Order"),
+                (r"\bin 2026\b", "im Jahr 2026 / 2026", "In German, write years bare ('2026') or as 'im Jahr 2026'.", "Preposition Usage")
             ]
             for pat, rep, exp, cat in rules:
                 if re.search(pat, corrected_text, re.IGNORECASE):
                     score -= 12.0
                     corrections.append({"original": pat, "correction": rep, "explanation": exp, "category": cat})
                     corrected_text = re.sub(pat, rep, corrected_text, count=1, flags=re.IGNORECASE)
-            improvements.append("Use precise German modal particles like 'doch', 'mal', or 'ja' to sound authentic.")
+            improvements.append("Use German modal particles like 'doch', 'mal', or 'ja' for natural cadence.")
 
         elif language == "korean":
             if "나는 학생" in text and "입니다" not in text and "이야" not in text:
@@ -174,8 +166,6 @@ class MultilingualAIService:
                     "category": "Sentence Ending"
                 })
                 corrected_text = text.replace("나는 학생", "저는 학생입니다")
-            if "나의 이름은" in text:
-                improvements.append("Instead of literal '나의 이름은', Koreans naturally say '제 이름은' or simply '저는 [이름]이에요'.")
             improvements.append("Pay close attention to Topic particles (은/는) vs Subject particles (이/가).")
 
         else: # English
@@ -186,8 +176,7 @@ class MultilingualAIService:
                 (r"\bshe have\b", "she has", "Third-person singular: 'she' takes 'has'.", "Verb Agreement"),
                 (r"\bdid went\b", "did go", "Past simple auxiliary 'did' takes base verb 'go'.", "Double Past Tense"),
                 (r"\ba apple\b", "an apple", "Use indefinite article 'an' before vowel sounds.", "Article Usage"),
-                (r"\bdepends of\b", "depends on", "Preposition collocation: 'depend' takes 'on'.", "Collocation"),
-                (r"\bdiscuss about\b", "discuss", "'Discuss' is transitive and does not take 'about'.", "Redundant Preposition")
+                (r"\bdepends of\b", "depends on", "Preposition collocation: 'depend' takes 'on'.", "Collocation")
             ]
             for pat, rep, exp, cat in rules:
                 if re.search(pat, corrected_text, re.IGNORECASE):
@@ -197,8 +186,6 @@ class MultilingualAIService:
 
             if "very good" in text.lower():
                 improvements.append("Elevate 'very good' with 'exceptional', 'outstanding', or 'superb'.")
-            if "i think" in text.lower():
-                improvements.append("Try replacing 'I think' with 'In my view' or 'From my perspective'.")
 
         score = max(50.0, min(100.0, score))
         return {
@@ -211,7 +198,146 @@ class MultilingualAIService:
         }
 
     # =========================================================================
-    # 3. Multilingual Vocabulary Bank
+    # 3. Telugu Translation Quizzes (Target Language <-> Telugu)
+    # =========================================================================
+    def get_telugu_translation_quizzes(self, language: str = "english") -> list[dict]:
+        """
+        Two-way translation quizzes between Target Language and Telugu (తెలుగు):
+        1) Read Sentence in Target Language -> Translate into Telugu
+        2) Read Telugu Sentence -> Translate into Target Language
+        """
+        quizzes = {
+            "english": [
+                {
+                    "id": "te-en-1",
+                    "direction": "to_telugu",
+                    "direction_title": "Read English → Translate to Telugu (తెలుగులోకి అనువదించండి)",
+                    "source_sentence": "I am learning a new language with great enthusiasm.",
+                    "telugu_sentence": "నేను ఎంతో ఉత్సాహంతో కొత్త భాషను నేర్చుకుంటున్నాను.",
+                    "options": [
+                        "నేను నిన్న మార్కెట్‌కు వెళ్లాను.",
+                        "నేను ఎంతో ఉత్సాహంతో కొత్త భాషను నేర్చుకుంటున్నాను.",
+                        "నాకు ఈ పుస్తకం చదవడం ఇష్టం లేదు.",
+                        "వారు రేపు మా ఇంటికి వస్తారు."
+                    ],
+                    "correct_index": 1,
+                    "explanation": "'I am learning' అంటే 'నేను నేర్చుకుంటున్నాను', 'with great enthusiasm' అంటే 'ఎంతో ఉత్సాహంతో'."
+                },
+                {
+                    "id": "te-en-2",
+                    "direction": "from_telugu",
+                    "direction_title": "Read Telugu (తెలుగు చదవండి) → Translate to English",
+                    "source_sentence": "మీరు ఈ ప్రాజెక్ట్‌ను ఎప్పుడు పూర్తి చేస్తారు?",
+                    "telugu_sentence": "మీరు ఈ ప్రాజెక్ట్‌ను ఎప్పుడు పూర్తి చేస్తారు?",
+                    "options": [
+                        "Where are you working on this project?",
+                        "Why did you start this project?",
+                        "When will you complete this project?",
+                        "Who helped you with this project?"
+                    ],
+                    "correct_index": 2,
+                    "explanation": "'ఎప్పుడు పూర్తి చేస్తారు?' అనేది భవిష్యత్తు ప్రశ్న కాబట్టి 'When will you complete this project?' సరైన ఆంగ్ల అనువాదం."
+                },
+                {
+                    "id": "te-en-3",
+                    "direction": "to_telugu",
+                    "direction_title": "Read English → Translate to Telugu (తెలుగులోకి అనువదించండి)",
+                    "source_sentence": "Consistency and dedication always lead to success.",
+                    "telugu_sentence": "నిరంతర సాధన మరియు అంకితభావం ఎల్లప్పుడూ విజయానికి దారితీస్తాయి.",
+                    "options": [
+                        "నిరంతర సాధన మరియు అంకితభావం ఎల్లప్పుడూ విజయానికి దారితీస్తాయి.",
+                        "విజయం సాధించడం చాలా కష్టమైన పని.",
+                        "మనం సమయానికి ఆఫీసుకు చేరుకోవాలి.",
+                        "ఈ రోజు వాతావరణం చాలా వేడిగా ఉంది."
+                    ],
+                    "correct_index": 0,
+                    "explanation": "'Consistency' అంటే 'నిరంతర సాధన', 'dedication' అంటే 'అంకితభావం', 'lead to success' అంటే 'విజయానికి దారితీస్తాయి'."
+                },
+                {
+                    "id": "te-en-4",
+                    "direction": "from_telugu",
+                    "direction_title": "Read Telugu (తెలుగు చదవండి) → Translate to English",
+                    "source_sentence": "నాకు సహాయం చేసినందుకు మీకు చాలా ధన్యవాదాలు.",
+                    "telugu_sentence": "నాకు సహాయం చేసినందుకు మీకు చాలా ధన్యవాదాలు.",
+                    "options": [
+                        "Could you please help me with this?",
+                        "Thank you very much for helping me.",
+                        "I am happy to assist you today.",
+                        "We should help each other regularly."
+                    ],
+                    "correct_index": 1,
+                    "explanation": "'నాకు సహాయం చేసినందుకు' = 'for helping me', 'చాలా ధన్యవాదాలు' = 'Thank you very much'."
+                }
+            ],
+            "german": [
+                {
+                    "id": "te-de-1",
+                    "direction": "to_telugu",
+                    "direction_title": "Read German (Deutsch) → Translate to Telugu (తెలుగులోకి అనువదించండి)",
+                    "source_sentence": "Guten Morgen! Wie geht es Ihnen heute?",
+                    "telugu_sentence": "శుభోదయం! ఈరోజు మీరు ఎలా ఉన్నారు?",
+                    "options": [
+                        "శుభరాత్రి! రేపు కలుద్దాం.",
+                        "శుభోదయం! ఈరోజు మీరు ఎలా ఉన్నారు?",
+                        "ధన్యవాదాలు! మీ పేరు ఏమిటి?",
+                        "నాకు జర్మన్ భాష రాదు."
+                    ],
+                    "correct_index": 1,
+                    "explanation": "'Guten Morgen' = శుభోదయం, 'Wie geht es Ihnen heute?' = ఈరోజు మీరు ఎలా ఉన్నారు?"
+                },
+                {
+                    "id": "te-de-2",
+                    "direction": "from_telugu",
+                    "direction_title": "Read Telugu (తెలుగు చదవండి) → Translate to German",
+                    "source_sentence": "నేను జర్మన్ భాష నేర్చుకుంటున్నాను.",
+                    "telugu_sentence": "నేను జర్మన్ భాష నేర్చుకుంటున్నాను.",
+                    "options": [
+                        "Ich spreche kein Deutsch.",
+                        "Ich lerne die deutsche Sprache.",
+                        "Wo wohnen Sie in Deutschland?",
+                        "Ich reise morgen nach Berlin."
+                    ],
+                    "correct_index": 1,
+                    "explanation": "'Ich lerne' = నేను నేర్చుకుంటున్నాను, 'die deutsche Sprache' = జర్మన్ భాష."
+                }
+            ],
+            "korean": [
+                {
+                    "id": "te-ko-1",
+                    "direction": "to_telugu",
+                    "direction_title": "Read Korean (한국어) → Translate to Telugu (తెలుగులోకి అనువదించండి)",
+                    "source_sentence": "만나서 반갑습니다. 저는 스왑나입니다.",
+                    "telugu_sentence": "మిమ్మల్ని కలవడం సంతోషంగా ఉంది. నా పేరు స్왑న.",
+                    "options": [
+                        "ధన్యవాదాలు, మళ్ళీ కలుద్దాం.",
+                        "మిమ్మల్ని కలవడం సంతోషంగా ఉంది. నా పేరు స్왑న.",
+                        "ఈ రోజు చాలా చల్లగా ఉంది.",
+                        "భోజనం చేశారా?"
+                    ],
+                    "correct_index": 1,
+                    "explanation": "'만나서 반갑습니다' = మిమ్మల్ని కలవడం సంతోషంగా ఉంది, '저는 스왑나입니다' = నా పేరు స్왑న."
+                },
+                {
+                    "id": "te-ko-2",
+                    "direction": "from_telugu",
+                    "direction_title": "Read Telugu (తెలుగు చదవండి) → Translate to Korean",
+                    "source_sentence": "ఈరోజు వాతావరణం చాలా బాగుంది.",
+                    "telugu_sentence": "ఈరోజు వాతావరణం చాలా బాగుంది.",
+                    "options": [
+                        "오늘 날씨가 정말 좋네요.",
+                        "내일 비가 올 것 같아요.",
+                        "어제는 날씨가 흐렸어요.",
+                        "지금 몇 시인가요?"
+                    ],
+                    "correct_index": 0,
+                    "explanation": "'오늘' = ఈరోజు, '날씨가' = వాతావరణం, '정말 좋네요' = చాలా బాగుంది."
+                }
+            ]
+        }
+        return quizzes.get(language.lower(), quizzes["english"])
+
+    # =========================================================================
+    # 4. Multilingual Vocabulary Bank
     # =========================================================================
     def get_vocabulary_words(self, language: str = "english", level: str = "all") -> list[dict]:
         banks = {
@@ -220,10 +346,10 @@ class MultilingualAIService:
                     "word": "Articulate",
                     "phonetic": "/ɑːrˈtɪk.jə.lət/",
                     "syllables": "ar-TIC-u-late",
-                    "part_of_speech": "adjective / verb",
+                    "part_of_speech": "adjective",
                     "difficulty": "advanced",
                     "definition": "Having or showing the ability to speak fluently and coherently.",
-                    "example": "She delivered an articulate summary of the project.",
+                    "example": "Swapna delivered an articulate summary of the project.",
                     "collocations": ["articulate speaker", "articulate clearly"]
                 },
                 {
@@ -233,7 +359,7 @@ class MultilingualAIService:
                     "part_of_speech": "noun",
                     "difficulty": "intermediate",
                     "definition": "The capacity to recover quickly from difficulties.",
-                    "example": "His resilience helped the team overcome setbacks.",
+                    "example": "Her resilience helped the team overcome obstacles.",
                     "collocations": ["demonstrate resilience", "remarkable resilience"]
                 },
                 {
@@ -243,7 +369,7 @@ class MultilingualAIService:
                     "part_of_speech": "adjective",
                     "difficulty": "beginner",
                     "definition": "Having or showing care and conscientiousness in work.",
-                    "example": "Through diligent practice, Swapna mastered new concepts.",
+                    "example": "Through diligent practice, you will master the language.",
                     "collocations": ["diligent student", "diligent effort"]
                 }
             ],
@@ -264,19 +390,9 @@ class MultilingualAIService:
                     "syllables": "Fin-ger-spit-zen-ge-fühl",
                     "part_of_speech": "noun (neuter)",
                     "difficulty": "advanced",
-                    "definition": "Intuitive flair, tact, delicate sensitivity in handling difficult situations.",
+                    "definition": "Intuitive flair, tact, and delicate sensitivity.",
                     "example": "Für diese Verhandlung braucht man diplomatisches Fingerspitzengefühl.",
-                    "collocations": ["diplomatisches Fingerspitzengefühl", "Fingerspitzengefühl beweisen"]
-                },
-                {
-                    "word": "Die Gemütlichkeit",
-                    "phonetic": "/ɡəˈmyːtlɪçkaɪ̯t/",
-                    "syllables": "Ge-müt-lich-keit",
-                    "part_of_speech": "noun (feminine)",
-                    "difficulty": "beginner",
-                    "definition": "A state of coziness, warmth, and friendly contentment.",
-                    "example": "Das kleine Café strahlt echte Gemütlichkeit aus.",
-                    "collocations": ["angenehme Gemütlichkeit", "Gemütlichkeit genießen"]
+                    "collocations": ["diplomatisches Fingerspitzengefühl"]
                 }
             ],
             "korean": [
@@ -286,118 +402,26 @@ class MultilingualAIService:
                     "syllables": "Nun-chi",
                     "part_of_speech": "noun",
                     "difficulty": "intermediate",
-                    "definition": "The subtle art and ability to gauge others' moods, feelings, and social context.",
-                    "example": "그녀는 눈치가 빨라서 상황을 즉시 파악해요 (She has quick nunchi and reads situations immediately).",
-                    "collocations": ["눈치가 빠르다 (quick-witted)", "눈치를 보다 (sense mood)"]
+                    "definition": "The subtle art and ability to gauge others' moods and context.",
+                    "example": "그녀는 눈치가 빨라서 상황을 즉시 파악해요.",
+                    "collocations": ["눈치가 빠르다", "눈치를 보다"]
                 },
                 {
                     "word": "인연 (In-yeon)",
                     "phonetic": "/in.jʌn/",
                     "syllables": "In-yeon",
-                    "part_of_speech": "noun (Hanja: 因緣)",
+                    "part_of_speech": "noun",
                     "difficulty": "advanced",
                     "definition": "Karmic tie, fateful destiny connecting people through time.",
-                    "example": "우리가 이렇게 만난 것도 깊은 인연입니다 (Our meeting like this is profound inyeon).",
-                    "collocations": ["소중한 인연 (precious connection)", "인연을 맺다 (form connection)"]
-                },
-                {
-                    "word": "감사합니다 (Gamsahamnida)",
-                    "phonetic": "/kam.sa.ham.ni.da/",
-                    "syllables": "Gam-sa-ham-ni-da",
-                    "part_of_speech": "expression / phrase",
-                    "difficulty": "beginner",
-                    "definition": "Thank you (Formal, polite expression of gratitude).",
-                    "example": "도와주셔서 진심으로 감사합니다 (Thank you sincerely for helping).",
-                    "collocations": ["진심으로 감사합니다", "대단히 감사합니다"]
+                    "example": "우리가 만난 것도 깊은 인연입니다.",
+                    "collocations": ["소중한 인연", "인연을 맺다"]
                 }
             ]
         }
-
         lang_bank = banks.get(language.lower(), banks["english"])
         if level != "all":
             return [w for w in lang_bank if w["difficulty"] == level]
         return lang_bank
-
-    # =========================================================================
-    # 4. Daily Practice (Multilingual)
-    # =========================================================================
-    def get_daily_practice(self, language: str = "english", level: str = "intermediate") -> dict:
-        if language == "german":
-            return {
-                "day_title": "Tägliche 5-Minuten Deutsch-Praxis",
-                "idiom": {
-                    "phrase": "Ich verstehe nur Bahnhof",
-                    "meaning": "Literal: 'I only understand train station'. Meaning: It's all Greek to me / I don't understand anything.",
-                    "example": "Wenn er über Quantenphysik spricht, verstehe ich nur Bahnhof!"
-                },
-                "grammar_puzzle": {
-                    "question": "Welcher Artikel passt zu 'Mädchen'?",
-                    "options": ["Der Mädchen", "Die Mädchen", "Das Mädchen"],
-                    "correct_index": 2,
-                    "explanation": "Diminutives ending in '-chen' (like Mädchen) are grammatically neuter (das)."
-                },
-                "dialogue_scenario": {
-                    "context": "Im Café in Berlin",
-                    "prompt": "Bestelle einen Cappuccino mit Hafermilch und frage nach dem WLAN-Passwort.",
-                    "suggested_opening": "Könnte ich bitte einen Cappuccino mit Hafermilch bekommen? Und wie lautet das WLAN-Passwort?"
-                },
-                "sentence_builder": {
-                    "words": ["heute", "Ich", "lerne", "fleißig", "Deutsch"],
-                    "correct_order": "Ich lerne heute fleißig Deutsch."
-                }
-            }
-        elif language == "korean":
-            return {
-                "day_title": "매일 5분 한국어 챌린지 (Daily Korean Challenge)",
-                "idiom": {
-                    "phrase": "식은 죽 먹기 (Sikeun juk meokgi)",
-                    "meaning": "Like eating cold porridge — a piece of cake / very easy.",
-                    "example": "오늘 한국어 퀴즈는 식은 죽 먹기였어요! (Today's Korean quiz was a piece of cake!)"
-                },
-                "grammar_puzzle": {
-                    "question": "'선생님(Teacher)' 뒤에 오는 올바른 주격 조사는?",
-                    "options": ["선생님이", "선생님가", "선생님를"],
-                    "correct_index": 0,
-                    "explanation": "받침(consonant ending 'ㅁ') 뒤에는 주격 조사 '이'가 붙습니다."
-                },
-                "dialogue_scenario": {
-                    "context": "서울 카페에서 (At a Seoul Cafe)",
-                    "prompt": "아이스 아메리카노 한 잔과 영수증을 정중하게 주문해보세요.",
-                    "suggested_opening": "아이스 아메리카노 한 잔 부탁드립니다. 영수증도 같이 주세요."
-                },
-                "sentence_builder": {
-                    "words": ["오늘", "저는", "한국어를", "열심히", "공부해요"],
-                    "correct_order": "저는 오늘 한국어를 열심히 공부해요."
-                }
-            }
-        else: # English
-            return {
-                "day_title": "Daily 5-Minute English Practice",
-                "idiom": {
-                    "phrase": "Hit the nail on the head",
-                    "meaning": "Describe exactly what is causing a situation or problem.",
-                    "example": "Swapna hit the nail on the head during the strategy meeting."
-                },
-                "grammar_puzzle": {
-                    "question": "Which sentence correctly uses the present perfect continuous?",
-                    "options": [
-                        "I am working on this project since three months.",
-                        "I have been working on this project for three months.",
-                        "I had worked on this project since three months."
-                    ],
-                    "correct_index": 1,
-                    "explanation": "Use 'have been working' + 'for' to express duration up to the present."
-                },
-                "dialogue_scenario": {
-                    "context": "Workplace Collaboration",
-                    "prompt": "Politely ask your colleague for feedback on your presentation outline.",
-                    "suggested_opening": "Could you spare a few minutes to look over my presentation draft and share your thoughts?"
-                },
-                "sentence_builder": {
-                    "words": ["would", "appreciate", "I", "your", "constructive", "feedback"],
-                    "correct_order": "I would appreciate your constructive feedback."
-                }
-            }
 
     # =========================================================================
     # 5. Speaking Simulation
@@ -406,16 +430,16 @@ class MultilingualAIService:
         grammar = self.analyze_grammar(user_transcript, language=language)
 
         if language == "german":
-            speaker = "Interviewer / Gesprächspartner"
-            feedback = "Gute Aussprache und klare Satzstruktur. Achte auf die korrekten Dativ- und Akkusativendungen."
+            speaker = "Interviewer (Deutsch)"
+            feedback = "Gute Aussprache und klare Satzstruktur."
             next_prompt = "Könnten Sie mir mehr über Ihre bisherigen Erfahrungen und Stärken erzählen?"
         elif language == "korean":
-            speaker = "면접관 / 대화 파트너 (Interviewer)"
-            feedback = "자연스러운 존댓말 사용입니다. 상황에 맞는 어휘 선택이 돋보입니다."
+            speaker = "면접관 (Interviewer)"
+            feedback = "자연스러운 존댓말 사용입니다."
             next_prompt = "이 프로젝트에서 본인이 가장 주도적으로 해결한 문제는 무엇이었나요?"
-        else: # English
+        else:
             speaker = "Interviewer (Hiring Lead)"
-            feedback = "Clear, articulate tone. Structure key achievements with the STAR framework (Situation, Task, Action, Result)."
+            feedback = "Clear, articulate tone. Structure key achievements with the STAR framework."
             next_prompt = "Could you share a specific challenge you overcame recently and what outcome you achieved?"
 
         return {
@@ -435,27 +459,23 @@ class MultilingualAIService:
             improved = (
                 f"Betreff: Wichtige Mitteilung bezüglich {user_input.strip()[:30]}\n\n"
                 f"Sehr geehrte Damen und Herren,\n\n"
-                f"ich wende mich an Sie, um Ihnen mitzuteilen, dass {user_input.strip()}. "
-                f"Für Rückfragen stehe ich Ihnen selbstverständlich jederzeit gerne zur Verfügung.\n\n"
+                f"ich wende mich an Sie, um Ihnen mitzuteilen, dass {user_input.strip()}.\n\n"
                 f"Mit freundlichen Grüßen,\n"
                 f"Swapna Aleti"
             )
         elif language == "korean":
             improved = (
-                f"제목: {user_input.strip()[:20]} 관련 안내 및 요청의 건\n\n"
+                f"제목: {user_input.strip()[:20]} 관련 안내의 건\n\n"
                 f"안녕하세요, 담당자님.\n\n"
-                f"다름이 아니라 {user_input.strip()} 건과 관련하여 연락드립니다. "
-                f"검토 후 문의사항이 있으시면 언제든지 편하게 말씀해 주시기 바랍니다.\n\n"
+                f"다름이 아니라 {user_input.strip()} 건과 관련하여 연락드립니다.\n\n"
                 f"감사합니다.\n"
                 f"알레티 스왑나(Swapna Aleti) 드림"
             )
-        else: # English
+        else:
             improved = (
                 f"Subject: Professional Update: Regarding {user_input.strip()[:35]}\n\n"
                 f"Dear Colleagues,\n\n"
-                f"I am writing to formally communicate that {user_input.strip()}. "
-                f"Please let me know if you require any further documentation or clarification.\n\n"
-                f"Thank you for your time and collaboration.\n\n"
+                f"I am writing to formally communicate that {user_input.strip()}.\n\n"
                 f"Warm regards,\n"
                 f"Swapna Aleti"
             )
@@ -467,8 +487,7 @@ class MultilingualAIService:
             "improved_text": improved,
             "actionable_tips": [
                 "Maintain polite greetings and clear sign-offs.",
-                "Keep core messaging in the first paragraph.",
-                "Proofread for regional professional etiquette."
+                "Keep core messaging in the first paragraph."
             ]
         }
 
@@ -476,14 +495,13 @@ class MultilingualAIService:
     # 7. Pronunciation Guides
     # =========================================================================
     def get_pronunciation_guide(self, word: str, language: str = "english") -> dict:
-        w_lower = word.strip().lower()
         if language == "german":
             return {
                 "word": word.capitalize(),
                 "ipa": f"/{word.lower()}/",
                 "syllables": "-".join([word[i:i+3] for i in range(0, len(word), 3)]),
-                "stress": "German words generally stress the root syllable (Stammbetonung).",
-                "tongue_tips": "Shape lips tightly forward for umlauts like 'ü' [y] and 'ö' [ø]. Pronounce 'w' as English 'v'.",
+                "stress": "Stress the root syllable.",
+                "tongue_tips": "Shape lips tightly forward for umlauts like 'ü' and 'ö'.",
                 "audio_text": word
             }
         elif language == "korean":
@@ -491,8 +509,8 @@ class MultilingualAIService:
                 "word": word,
                 "ipa": f"/{word}/",
                 "syllables": word,
-                "stress": "Korean is syllable-timed with pitch accents rather than heavy stress.",
-                "tongue_tips": "Distinguish between plain (ㄱ, ㄷ, ㅂ), aspirated (ㅋ, ㅌ, ㅍ), and tense (ㄲ, ㄸ, ㅃ) consonants.",
+                "stress": "Syllable-timed pitch accent.",
+                "tongue_tips": "Distinguish between plain (ㄱ), aspirated (ㅋ), and tense (ㄲ).",
                 "audio_text": word
             }
         else:

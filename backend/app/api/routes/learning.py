@@ -14,7 +14,7 @@ class ChatMessageRequest(BaseModel):
     session_id: str
     message: str
     level: str = "intermediate"
-    language: str = "english" # 'english', 'german', 'korean'
+    language: str = "english"
     english_only: bool = True
     mode: str = "tutor"
 
@@ -33,29 +33,27 @@ class SaveVocabRequest(BaseModel):
     difficulty: str = "intermediate"
 
 class SpeakingTurnRequest(BaseModel):
-    mode: str # 'interview', 'discussion', 'public_speaking', 'casual'
+    mode: str
     topic: str
     user_transcript: str
     language: str = "english"
     turn_count: int = 1
 
 class WritingAssistRequest(BaseModel):
-    task_type: str # 'email', 'resume', 'linkedin', 'story'
+    task_type: str
     user_input: str
     language: str = "english"
     tone: str = "formal"
 
-class WritingEvaluateRequest(BaseModel):
-    text: str
+class CompleteTaskRequest(BaseModel):
+    task_name: str
     language: str = "english"
-    prompt: Optional[str] = ""
-    task_type: str = "essay"
+    score: Optional[float] = 100.0
 
 # --- Endpoints ---
 
 @router.post("/chat")
 async def chat_with_tutor_endpoint(req: ChatMessageRequest, current_user: dict = Depends(get_current_user)):
-    """Interactive AI Tutor Chat for English, German, and Korean."""
     user_id = current_user["id"]
 
     history_rows = await query_all(
@@ -96,11 +94,6 @@ async def chat_with_tutor_endpoint(req: ChatMessageRequest, current_user: dict =
             (user_id, req.language, c.get("original", ""), c.get("correction", ""), c.get("explanation", ""), c.get("category", "Grammar"))
         )
 
-    await execute_commit(
-        "UPDATE learning_stats SET lessons_completed = lessons_completed + 1, active_language = ? WHERE user_id = ?",
-        (req.language, user_id)
-    )
-
     return {
         "reply": tutor_result["response"],
         "corrections": tutor_result.get("corrections", []),
@@ -109,19 +102,61 @@ async def chat_with_tutor_endpoint(req: ChatMessageRequest, current_user: dict =
         "session_id": req.session_id
     }
 
-@router.get("/chat/history")
-async def get_chat_history(session_id: str, current_user: dict = Depends(get_current_user)):
-    rows = await query_all(
-        "SELECT id, role, content, language, metadata_json, created_at FROM chat_history WHERE user_id = ? AND session_id = ? ORDER BY id ASC",
-        (current_user["id"], session_id)
+@router.get("/telugu-quizzes")
+def get_telugu_quizzes(language: str = "english"):
+    """Returns two-way sentence reading & translation quizzes between Target Language and Telugu."""
+    return ai_tutor.get_telugu_translation_quizzes(language=language)
+
+@router.post("/complete-task")
+async def complete_task_and_award_streak(req: CompleteTaskRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Awards streak and lesson counts in real-time when user completes a task/quiz.
+    """
+    user_id = current_user["id"]
+    today_str = datetime.date.today().isoformat()
+    yesterday_str = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+
+    stats = await query_one("SELECT * FROM learning_stats WHERE user_id = ?", (user_id,))
+    current_streak = stats.get("streak_days", 0) if stats else 0
+    last_active = stats.get("last_active_date") if stats else None
+
+    # Calculate real streak
+    if last_active == today_str:
+        # Already active today, maintain streak
+        new_streak = max(1, current_streak)
+    elif last_active == yesterday_str:
+        # Consecutive day!
+        new_streak = current_streak + 1
+    else:
+        # First day or streak broke
+        new_streak = 1
+
+    await execute_commit(
+        """
+        UPDATE learning_stats 
+        SET streak_days = ?, lessons_completed = lessons_completed + 1, last_active_date = ?, active_language = ?
+        WHERE user_id = ?
+        """,
+        (new_streak, today_str, req.language, user_id)
     )
-    for r in rows:
-        if r.get("metadata_json"):
-            try:
-                r["metadata"] = json.loads(r["metadata_json"])
-            except:
-                r["metadata"] = {}
-    return rows
+
+    # Save to practice session
+    await execute_commit(
+        """
+        INSERT INTO practice_sessions (user_id, language, mode, topic, level, score, feedback)
+        VALUES (?, ?, 'quiz', ?, 'intermediate', ?, 'Task completed successfully')
+        """,
+        (user_id, req.language, req.task_name, req.score)
+    )
+
+    updated_stats = await query_one("SELECT streak_days, lessons_completed FROM learning_stats WHERE user_id = ?", (user_id,))
+
+    return {
+        "status": "success",
+        "message": f"🎉 Task '{req.task_name}' completed! You earned a {new_streak}-day streak!",
+        "streak_days": updated_stats["streak_days"],
+        "lessons_completed": updated_stats["lessons_completed"]
+    }
 
 @router.post("/grammar-check")
 async def check_grammar_endpoint(req: GrammarCheckRequest, current_user: dict = Depends(get_current_user)):
@@ -164,14 +199,10 @@ async def save_vocabulary_word(req: SaveVocabRequest, current_user: dict = Depen
         """,
         (user_id, req.language, req.word, req.phonetic, req.part_of_speech, req.definition, req.example, req.difficulty)
     )
-    await execute_commit(
-        "UPDATE learning_stats SET words_learned = words_learned + 1 WHERE user_id = ?",
-        (user_id,)
-    )
     return {"status": "success", "message": f"Saved '{req.word}' to your personal vocabulary bank!"}
 
 @router.get("/daily-practice")
-async def get_daily(language: str = "english", level: str = "intermediate", current_user: dict = Depends(get_current_user)):
+async def get_daily(language: str = "english", level: str = "intermediate"):
     challenge = ai_tutor.get_daily_practice(language=language, level=level)
     return challenge
 
@@ -195,7 +226,7 @@ async def simulate_speaking(req: SpeakingTurnRequest, current_user: dict = Depen
         INSERT INTO practice_sessions (user_id, language, mode, topic, level, score, feedback)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (user_id, req.language, req.mode, req.topic, current_user.get("level", "intermediate"), result["score"], result["feedback"])
+        (user_id, req.language, req.mode, req.topic, "intermediate", result["score"], result["feedback"])
     )
 
     return result

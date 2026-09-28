@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   BookOpen,
   CalendarCheck,
+  Languages,
   Mic,
   PenTool,
   BookMarked,
@@ -19,7 +20,8 @@ export default function Sidebar({ currentTab, onSelectTab, isAdmin }) {
     { id: 'chat', label: 'AI Tutor Chat', icon: MessageSquare, category: 'AI Learning' },
     { id: 'grammar', label: 'Grammar & Polish', icon: CheckCircle2, category: 'AI Learning' },
     { id: 'vocab', label: 'Vocabulary Builder', icon: BookOpen, category: 'AI Learning' },
-    { id: 'daily', label: 'Daily 5-Min Practice', icon: CalendarCheck, category: 'AI Learning' },
+    { id: 'telugu', label: 'Telugu Translation Quiz', icon: Languages, category: 'Interactive Quizzes' },
+    { id: 'daily', label: 'Daily 5-Min Practice', icon: CalendarCheck, category: 'Interactive Quizzes' },
     { id: 'speaking', label: 'Speaking Simulation', icon: Mic, category: 'Practice Modes' },
     { id: 'writing', label: 'Writing Assistants', icon: PenTool, category: 'Practice Modes' },
     { id: 'reading', label: 'Reading Exercises', icon: BookMarked, category: 'Practice Modes' },
@@ -30,8 +32,7 @@ export default function Sidebar({ currentTab, onSelectTab, isAdmin }) {
     navItems.push({ id: 'admin', label: 'Admin Settings', icon: ShieldCheck, category: 'System' });
   }
 
-  // Group by category
-  const categories = ['Overview', 'AI Learning', 'Practice Modes', 'Assessment'];
+  const categories = ['Overview', 'AI Learning', 'Interactive Quizzes', 'Practice Modes', 'Assessment'];
   if (isAdmin) categories.push('System');
 
   return (
@@ -77,7 +78,7 @@ export default function Sidebar({ currentTab, onSelectTab, isAdmin }) {
                         padding: '9px 12px',
                         borderRadius: 'var(--radius-md)',
                         fontSize: '0.88rem',
-                        fontWeight: isActive ? 600 : 500,
+                        fontWeight: isActive ? 700 : 500,
                         backgroundColor: isActive ? 'var(--primary-light)' : 'transparent',
                         color: isActive ? 'var(--primary-text)' : 'var(--text-secondary)',
                         textAlign: 'left'
