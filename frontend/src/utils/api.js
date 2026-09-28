@@ -1,6 +1,29 @@
 // API Client Helper for LinguaSphere AI
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+export function getApiBase() {
+  const custom = localStorage.getItem('custom_backend_url');
+  if (custom && custom.trim()) {
+    let u = custom.trim().replace(/\/+$/, '');
+    if (!u.endsWith('/api')) u = `${u}/api`;
+    return u;
+  }
+  let envUrl = import.meta.env.VITE_API_URL || '';
+  if (envUrl && envUrl.trim()) {
+    let u = envUrl.trim().replace(/\/+$/, '');
+    if (!u.endsWith('/api')) u = `${u}/api`;
+    return u;
+  }
+  return '/api';
+}
+
+export function setCustomBackendUrl(url) {
+  if (!url || !url.trim()) {
+    localStorage.removeItem('custom_backend_url');
+  } else {
+    let clean = url.trim().replace(/\/+$/, '');
+    localStorage.setItem('custom_backend_url', clean);
+  }
+}
 
 export function getStoredToken() {
   return localStorage.getItem('token') || '';
@@ -27,6 +50,8 @@ export function getStoredUser() {
 
 async function request(endpoint, options = {}) {
   const token = getStoredToken();
+  const apiBase = getApiBase();
+
   const headers = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -38,7 +63,16 @@ async function request(endpoint, options = {}) {
     headers,
   };
 
-  const response = await fetch(`${API_BASE}${endpoint}`, config);
+  const targetUrl = `${apiBase}${endpoint}`;
+
+  let response;
+  try {
+    response = await fetch(targetUrl, config);
+  } catch (netErr) {
+    throw new Error(
+      `Cannot connect to backend server at ${apiBase}. Please check your backend link or connection.`
+    );
+  }
 
   if (response.status === 401) {
     clearStoredAuth();
@@ -51,7 +85,21 @@ async function request(endpoint, options = {}) {
     return response.blob();
   }
 
-  const data = await response.json().catch(() => null);
+  const contentType = response.headers.get('content-type') || '';
+  let data = null;
+  if (contentType.includes('application/json')) {
+    data = await response.json().catch(() => null);
+  } else {
+    const text = await response.text();
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(
+          `Backend route not found at ${targetUrl}. Make sure your Render backend URL is configured correctly.`
+        );
+      }
+      throw new Error(`Server returned error (${response.status}): ${text.slice(0, 100)}`);
+    }
+  }
 
   if (!response.ok) {
     const message = data?.detail || data?.message || `Request failed with status ${response.status}`;
@@ -69,7 +117,7 @@ export const api = {
   }),
   getMe: () => request('/auth/me'),
 
-  // Learning (Multilingual: English, German, Korean)
+  // Learning (Multilingual)
   sendMessage: (sessionId, message, level = 'intermediate', language = 'english', englishOnly = true, mode = 'tutor') =>
     request('/learning/chat', {
       method: 'POST',

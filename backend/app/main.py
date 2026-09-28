@@ -18,46 +18,51 @@ async def lifespan(app: FastAPI):
     print("[Startup] Initializing SQLite database schema...")
     await init_db()
     cfg = get_allowed_config()
-    print(f"[Startup] Configuration loaded: {len(cfg.get('allowed_users', []))} allowed users (Max: {cfg.get('max_allowed_users', 2)}).")
+    print(f"[Startup] Configuration loaded: {len(cfg.get('allowed_users', []))} allowed users.")
     yield
     print("[Shutdown] Application shutdown completed.")
 
 app = FastAPI(
-    title="Supernova English AI Learning Platform",
-    description="Full-stack AI-powered English Learning Platform for private authorized learners",
+    title="LinguaSphere AI Platform",
+    description="Multilingual AI-Powered Language Learning Platform for private authorized learners",
     version="1.0.0",
     lifespan=lifespan
 )
 
-# Enable CORS for local dev and frontend deployment
+# Enable CORS for Vercel, localhost, and all frontend origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Register API routers
+# Register routes with /api prefix AND without prefix to avoid any 404 Not Found errors
 app.include_router(auth_router, prefix="/api")
 app.include_router(learning_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 
+app.include_router(auth_router)
+app.include_router(learning_router)
+app.include_router(dashboard_router)
+app.include_router(admin_router)
+
 @app.get("/health")
 def health_check():
     """Health check endpoint for deployment monitoring."""
-    return {"status": "ok", "service": "Supernova English AI Backend", "version": "1.0.0"}
+    return {"status": "ok", "service": "LinguaSphere AI Backend", "version": "1.0.0"}
 
 @app.get("/api")
 def api_root():
     return {
-        "name": "Supernova English AI API",
+        "name": "LinguaSphere AI API",
         "status": "online",
         "docs_url": "/docs"
     }
 
-# Check if built frontend static assets exist
+# Check if built frontend static assets exist locally
 FRONTEND_DIST = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "frontend",
@@ -69,8 +74,7 @@ if os.path.exists(FRONTEND_DIST):
 
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
-        # Don't hijack API routes
-        if full_path.startswith("api") or full_path.startswith("docs") or full_path.startswith("openapi"):
+        if full_path.startswith("api") or full_path.startswith("docs") or full_path.startswith("openapi") or full_path.startswith("auth") or full_path.startswith("learning"):
             return None
         file_path = os.path.join(FRONTEND_DIST, full_path)
         if os.path.exists(file_path) and os.path.isfile(file_path):
