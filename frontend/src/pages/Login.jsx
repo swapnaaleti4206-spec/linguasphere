@@ -1,42 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { api, setStoredAuth, getApiBase, setCustomBackendUrl } from '../utils/api';
-import { Globe2, Shield, Lock, AlertCircle, ArrowRight, Settings } from 'lucide-react';
+import React, { useState } from 'react';
+import { api, setStoredAuth } from '../utils/api';
+import { Globe2, Shield, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [passcode, setPasscode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showBackendConfig, setShowBackendConfig] = useState(false);
-  const [backendUrlInput, setBackendUrlInput] = useState('');
-  const [connectionStatus, setConnectionStatus] = useState('testing'); // 'connected', 'disconnected', 'testing'
-
-  useEffect(() => {
-    testConnection();
-  }, []);
-
-  async function testConnection() {
-    setConnectionStatus('testing');
-    try {
-      await api.getConfigPreview();
-      setConnectionStatus('connected');
-      setError('');
-    } catch (err) {
-      setConnectionStatus('disconnected');
-      setShowBackendConfig(true);
-      setBackendUrlInput(getApiBase().replace(/\/api\/?$/, ''));
-      setError(
-        'Backend connection not found. If this is your first time on Vercel, please paste your Render backend URL below.'
-      );
-    }
-  }
-
-  function handleSaveBackendUrl(e) {
-    e.preventDefault();
-    if (!backendUrlInput.trim()) return;
-    setCustomBackendUrl(backendUrlInput);
-    testConnection();
-  }
 
   async function handleLogin(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -52,7 +22,7 @@ export default function Login({ onLoginSuccess }) {
       setStoredAuth(res.token, res.user);
       onLoginSuccess(res.user);
     } catch (err) {
-      setError(err.message || 'Login failed. Please verify your credentials or backend URL.');
+      setError(err.message || 'Login failed. Please verify your credentials or server status.');
     } finally {
       setLoading(false);
     }
@@ -97,60 +67,6 @@ export default function Login({ onLoginSuccess }) {
             Private Multilingual Studio: <strong>English • German • Korean</strong>
           </p>
         </div>
-
-        {/* Backend Status Bar */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '8px 16px',
-          borderRadius: 'var(--radius-md)',
-          backgroundColor: connectionStatus === 'connected' ? 'var(--success-light)' : 'var(--warning-light)',
-          fontSize: '0.8rem',
-          border: '1px solid var(--border-light)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: connectionStatus === 'connected' ? 'var(--success)' : 'var(--warning)'
-            }} />
-            <span>
-              Backend: {connectionStatus === 'connected' ? 'Connected & Ready' : 'Connecting / Needs URL'}
-            </span>
-          </div>
-
-          <button
-            onClick={() => setShowBackendConfig(!showBackendConfig)}
-            style={{ color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
-          >
-            <Settings size={13} />
-            <span>{showBackendConfig ? 'Hide' : 'Configure URL'}</span>
-          </button>
-        </div>
-
-        {/* Optional Custom Backend URL Input Box */}
-        {showBackendConfig && (
-          <form onSubmit={handleSaveBackendUrl} className="card" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ fontSize: '0.84rem', fontWeight: 700 }}>Render Backend API URL:</div>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-              Paste your Render Web Service URL (e.g. <code style={{ fontFamily: 'var(--font-mono)' }}>https://linguasphere-ba3h.onrender.com</code>):
-            </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                type="text"
-                value={backendUrlInput}
-                onChange={(e) => setBackendUrlInput(e.target.value)}
-                placeholder="https://your-service.onrender.com"
-                style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem' }}
-              />
-              <button type="submit" className="btn btn-primary btn-sm">
-                Connect
-              </button>
-            </div>
-          </form>
-        )}
 
         {/* Access Status Card */}
         <div className="card" style={{ padding: '14px 18px', backgroundColor: 'var(--bg-secondary)', borderStyle: 'dashed' }}>
