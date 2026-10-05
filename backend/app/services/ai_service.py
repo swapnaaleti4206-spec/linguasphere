@@ -866,4 +866,103 @@ class MultilingualAIService:
                 "audio_text": word
             }
 
+    # =========================================================================
+    # 8. Daily Practice Challenges
+    # =========================================================================
+    def get_daily_practice(self, language: str = "english", level: str = "intermediate") -> dict:
+        """
+        Returns structured daily workout including Idiom of the Day,
+        Grammar Puzzle, Dialogue Scenario, and Sentence Construction Challenge.
+        """
+        challenges = {
+            "english": {
+                "day_title": "Daily English Workout & Reflex Builder",
+                "idiom": {
+                    "phrase": "Hit the nail on the head",
+                    "meaning": "To describe exactly what is causing a situation or problem.",
+                    "example": "Swapna hit the nail on the head when presenting the project roadmap.",
+                    "telugu_meaning": "సరిగ్గా చెప్పడం / వాస్తవాన్ని కచ్చితంగా వ్యక్తపరచడం"
+                },
+                "grammar_puzzle": {
+                    "question": "Which sentence is grammatically correct?",
+                    "options": [
+                        "She don't know the answer to this question.",
+                        "She doesn't know the answer to this question.",
+                        "She didn't knew the answer to this question.",
+                        "She not knows the answer to this question."
+                    ],
+                    "correct_index": 1,
+                    "explanation": "Third-person singular subject 'she' requires 'does not' / 'doesn't' followed by base verb 'know'."
+                },
+                "dialogue_scenario": {
+                    "context": "Professional Workplace Collaboration",
+                    "prompt": "How would you politely ask a colleague for their feedback on your new proposal?",
+                    "suggested_opening": "Could you please take a look at my proposal and share your candid feedback whenever you have a moment?"
+                },
+                "sentence_builder": {
+                    "words": ["Consistency", "and", "dedication", "lead", "to", "remarkable", "growth"],
+                    "correct_order": "Consistency and dedication lead to remarkable growth."
+                }
+            },
+            "german": {
+                "day_title": "Tägliche Deutsch-Übung",
+                "idiom": {
+                    "phrase": "Daumen drücken",
+                    "meaning": "To cross one's fingers; wish someone good luck.",
+                    "example": "Ich drücke dir für deine morgige Präsentation ganz fest die Daumen!",
+                    "telugu_meaning": "మంచి జరగాలని కోరుకోవడం (ఆల్ ది బెస్ట్ చెప్పడం)"
+                },
+                "grammar_puzzle": {
+                    "question": "Welcher Satz ist grammatikalisch korrekt?",
+                    "options": [
+                        "Ich habe gestern ein Buch gelesen.",
+                        "Ich habe gestern gelesen ein Buch.",
+                        "Ich gestern ein Buch habe gelesen.",
+                        "Ich gelesen habe gestern ein Buch."
+                    ],
+                    "correct_index": 0,
+                    "explanation": "Im deutschen Perfekt steht das Hilfsverb an Position 2 und das Partizip II ('gelesen') am Satzende."
+                },
+                "dialogue_scenario": {
+                    "context": "Im Café bestellen",
+                    "prompt": "Wie bestellst du höflich einen Cappuccino mit Hafermilch?",
+                    "suggested_opening": "Ich hätte gerne einen Cappuccino mit Hafermilch, bitte."
+                },
+                "sentence_builder": {
+                    "words": ["Übung", "macht", "den", "Meister", "im", "Leben"],
+                    "correct_order": "Übung macht den Meister im Leben."
+                }
+            },
+            "korean": {
+                "day_title": "오늘의 한국어 데일리 챌린지",
+                "idiom": {
+                    "phrase": "발이 넓다 (Bal-i neolp-da)",
+                    "meaning": "To have a wide circle of acquaintances; well-connected.",
+                    "example": "그분은 발이 넓어서 아는 사람이 아주 많아요.",
+                    "telugu_meaning": "చాలా మంది పరిచయస్థులు మరియు మంచి సంబంధాలు కలిగి ఉండడం"
+                },
+                "grammar_puzzle": {
+                    "question": "다음 중 올바른 존댓말 문장은 무엇인가요?",
+                    "options": [
+                        "저는 학생이야.",
+                        "저는 학생입니다.",
+                        "나는 학생이에요.",
+                        "나는 학생입니다."
+                    ],
+                    "correct_index": 1,
+                    "explanation": "겸칭 '저'와 격식체 종결어미 '입니다'가 조화롭게 결합된 '저는 학생입니다'가 가장 올바릅니다."
+                },
+                "dialogue_scenario": {
+                    "context": "카페에서 주문하기",
+                    "prompt": "아이스 아메리카노 한 잔을 정중하게 주문해 보세요.",
+                    "suggested_opening": "아이스 아메리카노 한 잔 부탁드립니다."
+                },
+                "sentence_builder": {
+                    "words": ["꾸준한", "노력은", "반드시", "좋은", "결실을", "맺습니다"],
+                    "correct_order": "꾸준한 노력은 반드시 좋은 결실을 맺습니다."
+                }
+            }
+        }
+        return challenges.get(language.lower(), challenges["english"])
+
 ai_tutor = MultilingualAIService()
