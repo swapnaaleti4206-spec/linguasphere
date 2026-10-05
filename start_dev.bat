@@ -13,7 +13,7 @@ start "LinguaSphere Backend (Port 8000)" cmd /k "python run_backend.py"
 cd /d "%~dp0frontend"
 start "LinguaSphere Frontend (Port 5173)" cmd /k "npm.cmd run dev"
 
-timeout /t 3 /nobreak >nul
+ping 127.0.0.1 -n 4 >nul
 start http://localhost:5173
 
 echo.

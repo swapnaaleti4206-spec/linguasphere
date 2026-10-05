@@ -19,7 +19,7 @@ async def get_db():
         await conn.close()
 
 async def init_db():
-    """Initialize database tables from schema.sql."""
+    """Initialize database tables and run automatic non-destructive column migrations."""
     if not os.path.exists(SCHEMA_PATH):
         raise FileNotFoundError(f"Schema file not found at {SCHEMA_PATH}")
     
@@ -29,6 +29,26 @@ async def init_db():
     async with get_db() as conn:
         await conn.executescript(schema_sql)
         await conn.commit()
+
+        # Run safe migrations for tables that may have been created in older schema versions
+        migrations = [
+            ("chat_history", "language", "TEXT NOT NULL DEFAULT 'english'"),
+            ("learning_stats", "active_language", "TEXT DEFAULT 'english'"),
+            ("vocabulary", "language", "TEXT NOT NULL DEFAULT 'english'"),
+            ("grammar_mistakes", "language", "TEXT NOT NULL DEFAULT 'english'"),
+            ("practice_sessions", "language", "TEXT NOT NULL DEFAULT 'english'"),
+            ("writing_submissions", "language", "TEXT NOT NULL DEFAULT 'english'")
+        ]
+        for table, col, col_def in migrations:
+            try:
+                cursor = await conn.execute(f"PRAGMA table_info({table})")
+                rows = await cursor.fetchall()
+                existing_cols = [r[1] for r in rows]
+                if col not in existing_cols:
+                    await conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}")
+                    await conn.commit()
+            except Exception as e:
+                print(f"[DB Migration] Warning verifying {table}.{col}: {e}")
 
 async def query_one(sql: str, params: tuple = ()):
     """Convenience helper to fetch a single row as a dictionary."""
