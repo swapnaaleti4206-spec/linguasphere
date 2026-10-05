@@ -9,4 +9,6 @@ if __name__ == "__main__":
     print(f"==================================================")
     print(f"Starting LinguaSphere AI Backend on http://{host}:{port}")
     print(f"==================================================")
-    uvicorn.run("app.main:app", host=host, port=port, reload=False)
+    env = os.getenv("ENVIRONMENT", "development").lower()
+    is_dev = env != "production"
+    uvicorn.run("app.main:app", host=host, port=port, reload=is_dev)
