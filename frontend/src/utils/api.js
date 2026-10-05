@@ -74,9 +74,15 @@ async function request(endpoint, options = {}) {
   try {
     response = await fetch(targetUrl, config);
   } catch (netErr) {
-    throw new Error(
-      `Cannot connect to backend server at ${apiBase}. Please check your connection.`
-    );
+    // If backend is waking up (e.g. Render free tier), retry once
+    try {
+      await new Promise((r) => setTimeout(r, 2000));
+      response = await fetch(targetUrl, config);
+    } catch (retryErr) {
+      throw new Error(
+        `Cannot connect to backend server at ${apiBase}. Please check your connection or server status.`
+      );
+    }
   }
 
   if (response.status === 401) {

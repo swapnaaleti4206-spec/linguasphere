@@ -18,6 +18,35 @@ class MultilingualAIService:
         self.gemini_key = GEMINI_API_KEY.strip() if GEMINI_API_KEY else None
 
     def _call_external_llm(self, system_prompt: str, user_prompt: str) -> str | None:
+        # 1. Try Gemini if configured
+        if self.gemini_key:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_key}"
+                payload = {
+                    "contents": [
+                        {
+                            "parts": [
+                                {"text": f"{system_prompt}\n\nUser Question/Message: {user_prompt}"}
+                            ]
+                        }
+                    ],
+                    "generationConfig": {
+                        "temperature": 0.7,
+                        "maxOutputTokens": 1000
+                    }
+                }
+                resp = requests.post(url, json=payload, timeout=12)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts and "text" in parts[0]:
+                            return parts[0]["text"]
+            except Exception as e:
+                print(f"[AI Service] Gemini error: {e}")
+
+        # 2. Try Groq if configured
         if self.groq_key:
             try:
                 headers = {"Authorization": f"Bearer {self.groq_key}", "Content-Type": "application/json"}
@@ -33,6 +62,7 @@ class MultilingualAIService:
             except Exception as e:
                 print(f"[AI Service] Groq error: {e}")
 
+        # 3. Try OpenAI if configured
         if self.openai_key:
             try:
                 headers = {"Authorization": f"Bearer {self.openai_key}", "Content-Type": "application/json"}
@@ -65,12 +95,13 @@ class MultilingualAIService:
         target_lang = lang_names.get(language.lower(), "English")
 
         system_prompt = (
-            f"You are LinguaSphere AI, a world-class language tutor specializing in {target_lang}. "
+            f"You are LinguaSphere AI, an empathetic, encouraging, and expert language tutor specializing in {target_lang}. "
             f"The learner's proficiency is '{level}'.\n"
-            f"1. Respond naturally in {target_lang}, adapted to '{level}' level.\n"
-            f"2. Provide an English or Telugu translation hint if helpful.\n"
-            f"3. Kindly point out any grammar mistakes in a 'Grammar Tip'.\n"
-            f"4. Propose 1 natural phrase improvement."
+            f"Guidelines:\n"
+            f"1. Respond directly and helpfully in {target_lang} adapted to '{level}' level.\n"
+            f"2. Provide Telugu or English translation hints for key concepts when helpful.\n"
+            f"3. Provide polite, clear grammatical corrections and natural improvements.\n"
+            f"4. Ask 1 engaging follow-up question to keep the learner practicing."
         )
 
         external = self._call_external_llm(system_prompt, f"History: {history}\nLearner: {user_message}")
@@ -84,55 +115,354 @@ class MultilingualAIService:
                 "level": level
             }
 
-        return self._local_multilingual_tutor(user_message, level, language)
+        return self._local_multilingual_tutor(user_message, level, language, history)
 
-    def _local_multilingual_tutor(self, text: str, level: str, language: str) -> dict:
-        lower = text.lower().strip()
-        grammar = self.analyze_grammar(text, language=language)
+    def _local_multilingual_tutor(self, text: str, level: str, language: str, history: list[dict] = None) -> dict:
+        """
+        Comprehensive local pedagogical AI engine.
+        Handles vocabulary, grammar correction, conversational practice, Telugu translations,
+        and multilingual explanations (German, Korean, English).
+        """
+        raw_text = text.strip()
+        lower = raw_text.lower()
+        grammar = self.analyze_grammar(raw_text, language=language)
+        corrections = grammar.get("corrections", [])
+        improvements = grammar.get("improvements", [])
 
+        # --- German Handler ---
         if language == "german":
-            if any(w in lower for w in ["hallo", "guten tag", "hi", "servus"]):
+            if any(w in lower for w in ["hallo", "guten tag", "hi", "servus", "guten morgen"]):
                 reply = (
-                    "Hallo Swapna! Willkommen beim LinguaSphere Deutsch-Tutor. 🇩🇪 "
-                    "Wie geht es dir heute? Worüber möchtest du sprechen oder welche Grammatikregel möchtest du üben?"
+                    "Hallo! Herzlich willkommen im LinguaSphere Deutsch-Studio! 🇩🇪✨\n\n"
+                    "Wie geht es dir heute? (How are you doing today?)\n"
+                    "Hier sind 3 Dinge, die wir heute üben können:\n"
+                    "1️⃣ Alltagsgespräche (Daily conversation: Wetter, Hobbys, Arbeit)\n"
+                    "2️⃣ Grammatik & Artikel (der, die, das oder Fälle wie Akkusativ/Dativ)\n"
+                    "3️⃣ Wortschatz & Telugu/Englisch Übersetzung (Vocabulary & Translation)\n\n"
+                    "Worüber möchtest du sprechen?"
+                )
+            elif any(w in lower for w in ["danke", "vielen dank"]):
+                reply = (
+                    "Gerne geschehen! (You're very welcome! / మీకు స్వాగతం!)\n"
+                    "Du machst tolle Fortschritte. Möchtest du einen neuen Satz ausprobieren?"
+                )
+            elif "artikel" in lower or "der die das" in lower:
+                reply = (
+                    "🇩🇪 **Deutsche Artikel (Der, Die, Das) Schnelltipps:**\n\n"
+                    "• **der** (Maskulin): Endungen auf *-ling, -or, -ist, -ismus* (der Optimismus, der Motor).\n"
+                    "• **die** (Feminin): Endungen auf *-ung, -heit, -keit, -schaft, -tion, -tät* (die Freiheit, die Station).\n"
+                    "• **das** (Neutral): Endungen auf *-chen, -lein, -um, -ment* (das Mädchen, das Dokument).\n\n"
+                    "Möchtest du ein paar Übungen dazu machen?"
                 )
             else:
                 reply = (
-                    "Sehr gut ausgedrückt! Auf Deutsch ist die Satzstellung besonders wichtig. "
-                    "Um noch natürlicher zu klingen, könntest du 'außerdem' oder 'meiner Meinung nach' einbauen. "
-                    "Was denkst du darüber?"
+                    f"Das ist ein interessanter Gedanke! Auf Deutsch sagt man das sehr treffend.\n\n"
+                    f"💡 **Tipp für '{level}' Niveau:** Achte darauf, das Verb immer an die 2. Position im Hauptsatz zu setzen.\n"
+                    f"Könntest du mir mehr darüber erzählen? (Could you tell me more about that?)"
                 )
-        elif language == "korean":
-            if any(w in text for w in ["안녕", "안녕하세요", "반가워"]):
+            return {
+                "response": reply,
+                "corrections": corrections,
+                "suggestions": improvements,
+                "language": language,
+                "level": level
+            }
+
+        # --- Korean Handler ---
+        if language == "korean":
+            if any(w in lower for w in ["안녕", "안녕하세요", "hi", "hello", "annyeong"]):
                 reply = (
-                    "안녕하세요, 스왑나(Swapna)님! 링구아스피어 AI 한국어 튜터입니다. 🇰🇷 "
-                    "오늘 기분이 어떠세요? 한국어 대화, 문법, 또는 일상 표현 중 어떤 것을 연습하고 싶으신가요?"
+                    "안녕하세요! 링구아스피어 한국어 학습 스튜디오에 오신 것을 환영합니다! 🇰🇷✨\n\n"
+                    "오늘 하루는 어떠셨나요? (How was your day?)\n"
+                    "오늘 함께 연습해 볼 주제를 선택해 보세요:\n"
+                    "1️⃣ 일상 회화 연습 (Daily Korean Conversation)\n"
+                    "2️⃣ 필수 문법 및 존댓말 연습 (Polite endings: -아요/어요, -습니다)\n"
+                    "3️⃣ 단어 및 텔루구어/영어 번역 (Vocabulary & Translation)\n\n"
+                    "어떤 것부터 시작해 볼까요?"
+                )
+            elif any(w in lower for w in ["감사", "고마워", "gamsahamnida"]):
+                reply = (
+                    "천만에요! (You're welcome! / పర్వాలేదండి!)\n"
+                    "한국어 발음과 표현이 점점 자연스러워지고 있어요. 다음 문장도 말해볼까요?"
+                )
+            elif any(w in lower for w in ["은/는", "이/가", "조사", "particle"]):
+                reply = (
+                    "🇰🇷 **한국어 핵심 조사 가이드 (Topic vs Subject):**\n\n"
+                    "• **은 / 는** (주제 조사 - Topic): 문장의 큰 주제나 대조를 나타낼 때 사용합니다.\n"
+                    "  예: 저는 학생입니다 (Speaking of me, I am a student).\n"
+                    "• **이 / 가** (주격 조사 - Subject): 특정 행동의 주체를 강조할 때 사용합니다.\n"
+                    "  예: 비가 와요 (Rain is falling).\n\n"
+                    "이해가 잘 되셨나요? 예문 하나를 직접 만들어 보시겠어요?"
                 )
             else:
                 reply = (
-                    "정말 잘 말씀하셨어요! 한국어에서는 존댓말과 적절한 조사(은/는, 이/가, 을/를)의 사용이 매우 중요합니다. "
-                    "다음에는 어떤 일상 표현이나 질문을 연습해 볼까요?"
+                    f"정말 훌륭한 문장이에요! '{level}' 수준에 잘 맞는 표현입니다.\n\n"
+                    f"💡 **한국어 꿀팁:** 존댓말을 쓸 때는 문장 끝을 '-해요' 또는 '-습니다'로 마무리하는 것이 정중합니다.\n"
+                    f"이에 대해 더 이야기해 주시겠어요? (Could you share more about that?)"
                 )
-        else: # English
-            if any(w in lower for w in ["hello", "hi", "hey", "good morning"]):
+            return {
+                "response": reply,
+                "corrections": corrections,
+                "suggestions": improvements,
+                "language": language,
+                "level": level
+            }
+
+        # --- English (Primary & Multilingual Tutor Engine) ---
+        # 1. Greetings & Introductions
+        if any(w in lower for w in ["hello", "hi", "hey", "good morning", "good evening", "good afternoon"]):
+            reply = (
+                "Hello Swapna! Welcome to your LinguaSphere AI Learning Studio! 🌟✨\n\n"
+                "I am your personal AI language tutor. How are you feeling today?\n\n"
+                "Here are a few great ways we can practice right now:\n"
+                "• 🗣️ **Conversational Practice** — Chat about your day, travel, books, or interests.\n"
+                "• 📝 **Grammar & Sentence Polishing** — Share any sentence, and I'll analyze and elevate it.\n"
+                "• 🇮🇳 **Telugu ↔ English Translation** — Ask how to express any Telugu phrase naturally in English.\n"
+                "• 💼 **Job Interview & Professional Prep** — Practice workplace dialogue and formal presentations.\n\n"
+                "What would you like to explore today?"
+            )
+
+        # 2. Explicit Grammar Check Request or Sentences with Grammar Mistakes
+        elif any(phrase in lower for phrase in ["correct this", "is this correct", "check this", "fix this", "check my sentence", "did i say this right"]) or len(corrections) > 0:
+            if corrections:
+                primary = corrections[0]
                 reply = (
-                    "Hello Swapna! Welcome to your LinguaSphere AI English Studio. 🌟 "
-                    "How are you doing today? We can practice conversation, grammar, interview preparation, or translation quizzes!"
+                    f"Great initiative sharing your sentence! Let's polish it together: 🎯\n\n"
+                    f"**Analysis & Correction:**\n"
+                    f"• Original: *\"{raw_text}\"*\n"
+                    f"• Polished: **\"{grammar['corrected_text']}\"**\n\n"
+                    f"💡 **Why this rule applies ({primary['category']}):**\n"
+                    f"{primary['explanation']}\n\n"
+                    f"📌 **Telugu Explanation (తెలుగు వివరణ):**\n"
+                    f"ఆంగ్లంలో ఈ వాక్యాన్ని పలకడానికి **\"{grammar['corrected_text']}\"** అనేది సరైన మరియు సహజమైన రూపం.\n\n"
+                    f"Can you try creating another sentence using this corrected pattern?"
                 )
             else:
                 reply = (
-                    "That's a thoughtful point! Your sentence structure is coming along nicely. "
-                    "To sound even more articulate, try connecting ideas using transition phrases like 'Furthermore' or 'In my perspective'. "
-                    "Could you elaborate a bit more on that?"
+                    f"Spot on! 🌟 Your sentence: **\"{raw_text}\"** is grammatically correct and flows very nicely!\n\n"
+                    f"To make it sound even more sophisticated at your '{level}' level, you could say:\n"
+                    f"✨ *\"{self._elevate_sentence(raw_text)}\"*\n\n"
+                    f"Would you like to try another phrase or move to a new topic?"
                 )
+
+        # 3. Vocabulary / Meaning / Definition Request
+        elif any(k in lower for k in ["what does", "meaning of", "define", "what is", "how to use", "synonym"]):
+            vocab_info = self._explain_word_or_concept(raw_text)
+            reply = vocab_info
+
+        # 4. Telugu Translation & Telugu Queries
+        elif any(k in lower for k in ["in telugu", "translate to telugu", "telugu meaning", "telugu lo", "ardham", "artham"]):
+            reply = self._handle_telugu_query(raw_text)
+
+        # 5. Job Interview / Professional English Practice
+        elif any(k in lower for k in ["interview", "job", "career", "introduce yourself", "resume"]):
+            reply = (
+                "Excellent! Let's run a realistic **Mock Interview Practice** session! 💼👔\n\n"
+                "**Interviewer Question:**\n"
+                "\"Tell me about yourself, your core strengths, and what motivates you to learn and grow every day.\"\n\n"
+                "💡 **Tutor Tip:**\n"
+                "Structure your answer with the **Present-Past-Future framework**:\n"
+                "1. **Present:** Where you are now & what you specialize in.\n"
+                "2. **Past:** Notable experience or key accomplishments.\n"
+                "3. **Future:** Why this path excites you.\n\n"
+                "Whenever you're ready, type your response, and I will evaluate your fluency, vocabulary, and tone!"
+            )
+
+        # 6. Idioms & Expressions
+        elif any(k in lower for k in ["idiom", "phrasal verb", "expression", "proverb", "slang"]):
+            reply = (
+                "Idioms and phrasal verbs give your English natural color and fluency! 🌈\n\n"
+                "Here are two essential expressions used by fluent speakers:\n\n"
+                "1️⃣ **'To hit the nail on the head'** (సరిగ్గా చెప్పడం)\n"
+                "   • *Meaning:* To describe exactly what is causing a situation or problem.\n"
+                "   • *Example:* \"Swapna hit the nail on the head when discussing the project goals.\"\n\n"
+                "2️⃣ **'A blessing in disguise'** (మంచికే జరిగిన కష్టం)\n"
+                "   • *Meaning:* An apparent misfortune that eventually results in something good.\n"
+                "   • *Example:* \"Missing that bus was a blessing in disguise because I met an old friend.\"\n\n"
+                "Try using one of these in a sentence of your own!"
+            )
+
+        # 7. General Interactive Conversation (Contextual & Engaging)
+        else:
+            thoughtful_response = self._generate_conversational_response(raw_text, level)
+            reply = thoughtful_response
 
         return {
             "response": reply,
-            "corrections": grammar.get("corrections", []),
-            "suggestions": grammar.get("improvements", []),
+            "corrections": corrections,
+            "suggestions": improvements,
             "language": language,
             "level": level
         }
+
+    def _elevate_sentence(self, sentence: str) -> str:
+        replacements = [
+            ("very good", "exceptional"),
+            ("very happy", "delighted"),
+            ("very important", "crucial"),
+            ("very big", "substantial"),
+            ("i think", "in my perspective"),
+            ("but", "nevertheless,"),
+            ("also", "furthermore,")
+        ]
+        res = sentence
+        for old, new in replacements:
+            if old in res.lower():
+                pattern = re.compile(re.escape(old), re.IGNORECASE)
+                res = pattern.sub(new, res)
+                break
+        if res == sentence:
+            res = f"Indeed, {sentence.lower()}"
+        return res
+
+    def _explain_word_or_concept(self, query: str) -> str:
+        # Match target word precisely
+        target = ""
+        patterns = [
+            r"what\s+does\s+([a-zA-Z\-]+)\s+mean",
+            r"(?:what\s+is\s+)?the\s+meaning\s+of\s+([a-zA-Z\-]+)",
+            r"define\s+([a-zA-Z\-]+)",
+            r"how\s+to\s+use\s+([a-zA-Z\-]+)",
+            r"what\s+is\s+([a-zA-Z\-]+)"
+        ]
+        for pat in patterns:
+            m = re.search(pat, query, re.IGNORECASE)
+            if m:
+                target = m.group(1).strip().strip("?\"'.,")
+                break
+        if not target:
+            target = query.strip().split()[-1].strip("?\"'.,")
+        target_lower = target.lower()
+
+        # Curated vocabulary database with Telugu translations and IPA
+        vocab_db = {
+            "resilience": {
+                "ipa": "/rɪˈzɪl.jəns/",
+                "pos": "Noun",
+                "meaning": "The capacity to recover quickly from difficulties; toughness.",
+                "telugu": "స్థితిస్థాపకత / క్లిష్ట పరిస్థితులను తట్టుకుని నిలబడే శక్తి",
+                "example": "Her remarkable resilience helped her overcome every obstacle.",
+                "synonyms": "Tenacity, fortitude, perseverance"
+            },
+            "eloquent": {
+                "ipa": "/ˈel.ə.kwənt/",
+                "pos": "Adjective",
+                "meaning": "Fluent or persuasive in speaking or writing.",
+                "telugu": "స్పష్టమైన మరియు ఆకట్టుకునే సంభాషణ శైలి గల",
+                "example": "He gave an eloquent speech that inspired the entire audience.",
+                "synonyms": "Articulate, expressive, persuasive"
+            },
+            "perseverance": {
+                "ipa": "/ˌpɜː.sɪˈvɪə.rəns/",
+                "pos": "Noun",
+                "meaning": "Persistence in doing something despite difficulty or delay in achieving success.",
+                "telugu": "పట్టుదల / అవిశ్రాంత కృషి",
+                "example": "Through perseverance and patience, she achieved her lifelong dream.",
+                "synonyms": "Determination, persistence, dedication"
+            },
+            "ephemeral": {
+                "ipa": "/ɪˈfem.ər.əl/",
+                "pos": "Adjective",
+                "meaning": "Lasting for a very short time; transient.",
+                "telugu": "క్షణికమైనది / కొద్దికాలం మాత్రమే ఉండేది",
+                "example": "Fame in the digital era can often be ephemeral.",
+                "synonyms": "Fleeting, momentary, transient"
+            },
+            "serendipity": {
+                "ipa": "/ˌser.ənˈdɪp.ə.ti/",
+                "pos": "Noun",
+                "meaning": "The occurrence of events by chance in a happy or beneficial way.",
+                "telugu": "ఆకస్మికంగా కలిగే అదృష్టం",
+                "example": "Finding this book at the cafe was pure serendipity.",
+                "synonyms": "Fluke, pleasant surprise, good fortune"
+            }
+        }
+
+        if target_lower in vocab_db:
+            info = vocab_db[target_lower]
+            return (
+                f"📖 **Word Spotlight: {target.title()}**\n\n"
+                f"• **Phonetics:** `{info['ipa']}`\n"
+                f"• **Part of Speech:** *{info['pos']}*\n"
+                f"• **Definition:** {info['meaning']}\n"
+                f"• **Telugu Meaning (తెలుగు అర్థం):** **{info['telugu']}**\n"
+                f"• **Example in Context:** *\"{info['example']}\"*\n"
+                f"• **Synonyms:** {info['synonyms']}\n\n"
+                f"✨ **Practice Challenge:** Can you craft a sentence using **{target.lower()}**? I will review it right away!"
+            )
+
+        return (
+            f"📖 **Word Analysis: \"{target.title()}\"**\n\n"
+            f"• **Category:** Vocabulary & Practical Usage\n"
+            f"• **Practical Meaning:** It refers to expressing, describing, or experiencing '{target}'.\n"
+            f"• **How to use it in conversation:**\n"
+            f"  1. Subject position: *\"{target.title()} plays an important role in our daily communication.\"*\n"
+            f"  2. Object position: *\"I want to improve my understanding of {target.lower()}.\"*\n\n"
+            f"💡 **Telugu Hint (తెలుగు భావం):**\n"
+            f"ఈ పదం సందర్భానుసారంగా ఎలా ఉపయోగించాలో వాక్య రూపంలో అభ్యసించండి.\n\n"
+            f"Would you like to try using **{target}** in a short sentence so we can test its natural rhythm?"
+        )
+
+    def _handle_telugu_query(self, query: str) -> str:
+        return (
+            "🇮🇳 **Telugu ↔ English Translation & Nuance:**\n\n"
+            "Here are helpful ways to bridge Telugu thoughts into natural, polished English:\n\n"
+            "• **'నేను కొత్త విషయాలు నేర్చుకోవడానికి ఎల్లప్పుడూ సిద్ధంగా ఉంటాను'**\n"
+            "  → *\"I am always eager to learn new things and expand my horizons.\"*\n\n"
+            "• **'మీరు మీ పనిని సమయానికి పూర్తి చేశారా?'**\n"
+            "  → *\"Did you manage to complete your assignment on schedule?\"*\n\n"
+            "• **'ఈ రోజు వాతావరణం చాలా ఆహ్లాదకరంగా ఉంది'**\n"
+            "  → *\"The weather is remarkably pleasant today.\"*\n\n"
+            "Tell me any Telugu sentence or phrase you're thinking of, and I'll give you the most natural English expression for it!"
+        )
+
+    def _generate_conversational_response(self, text: str, level: str) -> str:
+        lower = text.lower()
+        
+        # Categorized Conversational Intent
+        if any(w in lower for w in ["how are you", "how r u", "how do you do"]):
+            return (
+                "I'm feeling energized and ready to help you excel in your language journey! 😊✨\n\n"
+                "How has your week been going so far? Did you have the chance to practice any new words or read something interesting?"
+            )
+
+        if any(w in lower for w in ["learn", "improve", "practice", "speak better", "fluency"]):
+            return (
+                "You have the exact right mindset for rapid fluency! 🚀\n\n"
+                "Three proven habits that will quickly boost your confidence:\n"
+                "1. **Think in English** for 5 minutes each morning without translating.\n"
+                "2. **Shadowing**: Listen to native audio and repeat the words immediately with the same tone.\n"
+                "3. **Daily micro-writing**: Write 2-3 sentences about your day right here in our chat.\n\n"
+                "What is one topic you feel most excited to discuss today?"
+            )
+
+        if any(w in lower for w in ["weather", "rain", "sunny", "cold", "hot"]):
+            return (
+                "Talking about the weather is one of the most natural small-talk skills in English! ☀️🌧️\n\n"
+                "Instead of just saying *'It is very hot'*, you can use expressive alternatives like:\n"
+                "• *\"It's sweltering today!\"* (చాలా వేడిగా ఉంది)\n"
+                "• *\"We are having glorious sunshine today.\"*\n\n"
+                "How is the climate in your city right now?"
+            )
+
+        if any(w in lower for w in ["work", "office", "study", "college", "school", "project"]):
+            return (
+                "Balancing your routine while advancing your communication skills shows genuine commitment! 💼📚\n\n"
+                "In professional contexts, strong transition phrases make your explanations impactful. "
+                "For example: *'In order to optimize our progress, we prioritized key milestones.'*\n\n"
+                "What kind of project or task are you currently focused on?"
+            )
+
+        # Dynamic reflective fallback that echoes the user's specific context
+        snippets = [s.strip() for s in re.split(r"[.?!,]", text) if len(s.strip()) > 3]
+        key_snippet = f"\"{snippets[0]}\"" if snippets else "your thought"
+
+        return (
+            f"That's a very engaging perspective on {key_snippet}! 💡\n\n"
+            f"Your structure communicates your message clearly. To elevate your expression for a '{level}' speaker:\n"
+            f"• Try beginning with a conversational bridge like: *\"From my observation...\"* or *\"I've noticed that...\"*\n\n"
+            f"Could you elaborate a bit more on that? For instance, what led you to this conclusion?"
+        )
 
     # =========================================================================
     # 2. Grammar Correction & Sentence Improvement Lab
@@ -174,18 +504,31 @@ class MultilingualAIService:
                 (r"\byou is\b", "you are", "Subject-verb agreement: 'you' takes 'are'.", "Subject-Verb Agreement"),
                 (r"\bhe have\b", "he has", "Third-person singular: 'he' takes 'has'.", "Verb Agreement"),
                 (r"\bshe have\b", "she has", "Third-person singular: 'she' takes 'has'.", "Verb Agreement"),
+                (r"\bshe don'?t\b", "she doesn't", "Third-person singular: 'she' takes 'does not' / 'doesn't'.", "Subject-Verb Agreement"),
+                (r"\bhe don'?t\b", "he doesn't", "Third-person singular: 'he' takes 'does not' / 'doesn't'.", "Subject-Verb Agreement"),
+                (r"\bit don'?t\b", "it doesn't", "Third-person singular: 'it' takes 'does not' / 'doesn't'.", "Subject-Verb Agreement"),
                 (r"\bdid went\b", "did go", "Past simple auxiliary 'did' takes base verb 'go'.", "Double Past Tense"),
+                (r"\bdid ate\b", "did eat", "Past simple auxiliary 'did' takes base verb 'eat'.", "Double Past Tense"),
+                (r"\bdid saw\b", "did see", "Past simple auxiliary 'did' takes base verb 'see'.", "Double Past Tense"),
                 (r"\ba apple\b", "an apple", "Use indefinite article 'an' before vowel sounds.", "Article Usage"),
-                (r"\bdepends of\b", "depends on", "Preposition collocation: 'depend' takes 'on'.", "Collocation")
+                (r"\ba hour\b", "an hour", "The 'h' in hour is silent; use 'an'.", "Article Usage"),
+                (r"\bdepends of\b", "depends on", "Preposition collocation: 'depend' takes 'on'.", "Collocation"),
+                (r"\blisten music\b", "listen to music", "The verb 'listen' requires the preposition 'to' before an object.", "Preposition"),
+                (r"\bcongratulate for\b", "congratulate on", "Preposition collocation: we congratulate someone 'on' their achievement.", "Collocation"),
+                (r"\bmarried with\b", "married to", "In English, say 'married to' someone.", "Preposition Collocation"),
+                (r"\blook forward to meet\b", "look forward to meeting", "'Look forward to' is followed by a gerund (-ing form).", "Gerund Usage"),
+                (r"\bdiscuss about\b", "discuss", "The verb 'discuss' is transitive and does not take 'about'.", "Redundant Preposition")
             ]
             for pat, rep, exp, cat in rules:
                 if re.search(pat, corrected_text, re.IGNORECASE):
                     score -= 10.0
-                    corrections.append({"original": pat, "correction": rep, "explanation": exp, "category": cat})
+                    corrections.append({"original": pat.replace("\\b", ""), "correction": rep, "explanation": exp, "category": cat})
                     corrected_text = re.sub(pat, rep, corrected_text, count=1, flags=re.IGNORECASE)
 
             if "very good" in text.lower():
                 improvements.append("Elevate 'very good' with 'exceptional', 'outstanding', or 'superb'.")
+            if "i think" in text.lower():
+                improvements.append("Try using 'In my perspective', 'From my viewpoint', or 'I believe'.")
 
         score = max(50.0, min(100.0, score))
         return {
