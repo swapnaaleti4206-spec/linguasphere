@@ -9,7 +9,8 @@ class MultilingualAIService:
     """
     Intelligent Multilingual Learning AI Engine for:
     - English, German, and Korean
-    - Telugu Translation Quizzes (Two-way: Target Language <-> Telugu)
+    - Telugu Translation Quizzes & Cross-Lingual Explanations (Target Language <-> Telugu)
+    - Comprehensive Linguistic Rule Engine (Duden German, NIIED Korean, CEFR English)
     """
 
     def __init__(self):
@@ -91,7 +92,11 @@ class MultilingualAIService:
         language: str = "english",
         mode: str = "tutor"
     ) -> dict:
-        lang_names = {"english": "English", "german": "German (Deutsch)", "korean": "Korean (한국어)"}
+        lang_names = {
+            "english": "English",
+            "german": "German (Deutsch)",
+            "korean": "Korean (한국어)"
+        }
         target_lang = lang_names.get(language.lower(), "English")
 
         system_prompt = (
@@ -124,112 +129,297 @@ class MultilingualAIService:
         and multilingual explanations (German, Korean, English).
         """
         raw_text = text.strip()
-        lower = raw_text.lower()
         grammar = self.analyze_grammar(raw_text, language=language)
         corrections = grammar.get("corrections", [])
         improvements = grammar.get("improvements", [])
 
-        # --- German Handler ---
         if language == "german":
-            if any(w in lower for w in ["hallo", "guten tag", "hi", "servus", "guten morgen"]):
-                reply = (
-                    "Hallo! Herzlich willkommen im LinguaSphere Deutsch-Studio! 🇩🇪✨\n\n"
-                    "Wie geht es dir heute? (How are you doing today?)\n"
-                    "Hier sind 3 Dinge, die wir heute üben können:\n"
-                    "1️⃣ Alltagsgespräche (Daily conversation: Wetter, Hobbys, Arbeit)\n"
-                    "2️⃣ Grammatik & Artikel (der, die, das oder Fälle wie Akkusativ/Dativ)\n"
-                    "3️⃣ Wortschatz & Telugu/Englisch Übersetzung (Vocabulary & Translation)\n\n"
-                    "Worüber möchtest du sprechen?"
-                )
-            elif any(w in lower for w in ["danke", "vielen dank"]):
-                reply = (
-                    "Gerne geschehen! (You're very welcome! / మీకు స్వాగతం!)\n"
-                    "Du machst tolle Fortschritte. Möchtest du einen neuen Satz ausprobieren?"
-                )
-            elif "artikel" in lower or "der die das" in lower:
-                reply = (
-                    "🇩🇪 **Deutsche Artikel (Der, Die, Das) Schnelltipps:**\n\n"
-                    "• **der** (Maskulin): Endungen auf *-ling, -or, -ist, -ismus* (der Optimismus, der Motor).\n"
-                    "• **die** (Feminin): Endungen auf *-ung, -heit, -keit, -schaft, -tion, -tät* (die Freiheit, die Station).\n"
-                    "• **das** (Neutral): Endungen auf *-chen, -lein, -um, -ment* (das Mädchen, das Dokument).\n\n"
-                    "Möchtest du ein paar Übungen dazu machen?"
-                )
-            else:
-                reply = (
-                    f"Das ist ein interessanter Gedanke! Auf Deutsch sagt man das sehr treffend.\n\n"
-                    f"💡 **Tipp für '{level}' Niveau:** Achte darauf, das Verb immer an die 2. Position im Hauptsatz zu setzen.\n"
-                    f"Könntest du mir mehr darüber erzählen? (Could you tell me more about that?)"
-                )
-            return {
-                "response": reply,
-                "corrections": corrections,
-                "suggestions": improvements,
-                "language": language,
-                "level": level
-            }
+            reply = self._handle_german_tutor(raw_text, level, grammar)
+        elif language == "korean":
+            reply = self._handle_korean_tutor(raw_text, level, grammar)
+        else:
+            reply = self._handle_english_tutor(raw_text, level, grammar)
 
-        # --- Korean Handler ---
-        if language == "korean":
-            if any(w in lower for w in ["안녕", "안녕하세요", "hi", "hello", "annyeong"]):
-                reply = (
-                    "안녕하세요! 링구아스피어 한국어 학습 스튜디오에 오신 것을 환영합니다! 🇰🇷✨\n\n"
-                    "오늘 하루는 어떠셨나요? (How was your day?)\n"
-                    "오늘 함께 연습해 볼 주제를 선택해 보세요:\n"
-                    "1️⃣ 일상 회화 연습 (Daily Korean Conversation)\n"
-                    "2️⃣ 필수 문법 및 존댓말 연습 (Polite endings: -아요/어요, -습니다)\n"
-                    "3️⃣ 단어 및 텔루구어/영어 번역 (Vocabulary & Translation)\n\n"
-                    "어떤 것부터 시작해 볼까요?"
-                )
-            elif any(w in lower for w in ["감사", "고마워", "gamsahamnida"]):
-                reply = (
-                    "천만에요! (You're welcome! / పర్వాలేదండి!)\n"
-                    "한국어 발음과 표현이 점점 자연스러워지고 있어요. 다음 문장도 말해볼까요?"
-                )
-            elif any(w in lower for w in ["은/는", "이/가", "조사", "particle"]):
-                reply = (
-                    "🇰🇷 **한국어 핵심 조사 가이드 (Topic vs Subject):**\n\n"
-                    "• **은 / 는** (주제 조사 - Topic): 문장의 큰 주제나 대조를 나타낼 때 사용합니다.\n"
-                    "  예: 저는 학생입니다 (Speaking of me, I am a student).\n"
-                    "• **이 / 가** (주격 조사 - Subject): 특정 행동의 주체를 강조할 때 사용합니다.\n"
-                    "  예: 비가 와요 (Rain is falling).\n\n"
-                    "이해가 잘 되셨나요? 예문 하나를 직접 만들어 보시겠어요?"
-                )
-            else:
-                reply = (
-                    f"정말 훌륭한 문장이에요! '{level}' 수준에 잘 맞는 표현입니다.\n\n"
-                    f"💡 **한국어 꿀팁:** 존댓말을 쓸 때는 문장 끝을 '-해요' 또는 '-습니다'로 마무리하는 것이 정중합니다.\n"
-                    f"이에 대해 더 이야기해 주시겠어요? (Could you share more about that?)"
-                )
-            return {
-                "response": reply,
-                "corrections": corrections,
-                "suggestions": improvements,
-                "language": language,
-                "level": level
-            }
+        return {
+            "response": reply,
+            "corrections": corrections,
+            "suggestions": improvements,
+            "language": language,
+            "level": level
+        }
 
-        # --- English (Primary & Multilingual Tutor Engine) ---
+    # =========================================================================
+    # GERMAN TUTOR ENGINE (Deutsch)
+    # =========================================================================
+    def _handle_german_tutor(self, text: str, level: str, grammar: dict) -> str:
+        lower = text.lower()
+        corrections = grammar.get("corrections", [])
+
+        # 1. Corrections first if any critical grammar error detected
+        if corrections:
+            primary = corrections[0]
+            return (
+                f"Toller Versuch! Lass uns deinen deutschen Satz gemeinsam feilen: 🎯🇩🇪\n\n"
+                f"**Satz-Korrektur:**\n"
+                f"• Dein Satz: *\"{text}\"*\n"
+                f"• Bessere Formulierung: **\"{grammar['corrected_text']}\"**\n\n"
+                f"💡 **Grammatik-Erklärung ({primary['category']}):**\n"
+                f"{primary['explanation']}\n\n"
+                f"📌 **Telugu వివరణ (తెలుగు అర్థం):**\n"
+                f"జర్మన్ భాషలో ఈ భావాన్ని చెప్పడానికి **\"{grammar['corrected_text']}\"** అనేది సరైన రూపం.\n\n"
+                f"Möchtest du einen neuen Satz mit diesem Muster ausprobieren?"
+            )
+
+        # 2. Greetings
+        if any(w in lower for w in ["hallo", "guten tag", "hi", "servus", "guten morgen", "guten abend", "moin"]):
+            return (
+                "Hallo! Herzlich willkommen im LinguaSphere Deutsch-Studio! 🇩🇪✨\n\n"
+                "Wie geht es dir heute? (How are you doing today? / ఈ రోజు మీరు ఎలా ఉన్నారు?)\n\n"
+                "Hier sind 4 praktische Dinge, die wir heute üben können:\n"
+                "• 🗣️ **Alltagsgespräche (Daily Chat)** — z. B. Über das Wetter, Essen oder Hobbys sprechen.\n"
+                "• 📖 **Deutsche Artikel (der, die, das)** — Lerne die Geheimnisse der Wortendungen.\n"
+                "• 🔍 **Die 4 Fälle (Kasus)** — Nominativ, Akkusativ, Dativ & Genitiv verstehen.\n"
+                "• 🇮🇳 **Deutsch ↔ Telugu Übersetzung** — Übersetze wichtige Ausdrücke.\n\n"
+                "Worüber möchtest du heute sprechen? (What would you like to discuss?)"
+            )
+
+        # 3. How are you queries
+        if any(w in lower for w in ["wie geht es dir", "wie geht's", "wie gehts", "wie geht es ihnen"]):
+            return (
+                "Mir geht es fantastisch, vielen Dank für die Nachfrage! 😊🇩🇪\n\n"
+                "💡 **Wichtiger Lerntipp:**\n"
+                "Im Deutschen sagt man auf die Frage 'Wie geht es dir?':\n"
+                "• *\"Mir geht es gut!\"* (I am doing well / నాకు బాగానే ఉంది)\n"
+                "⚠️ Vermeide *'Ich bin gut'*, denn das bedeutet eher 'I am good at something'.\n\n"
+                "Und wie läuft dein Tag bisher? (And how is your day going?)"
+            )
+
+        # 4. Thank you
+        if any(w in lower for w in ["danke", "vielen dank", "herzlichen dank"]):
+            return (
+                "Gerne geschehen! (You're very welcome! / మీకు స్వాగతం! ✨)\n\n"
+                "Du machst wunderbare Fortschritte beim Deutschlernen.\n"
+                "Hast du eine Frage zu einem bestimmten Wort oder möchtest du einen Satz bilden?"
+            )
+
+        # 5. Articles (der, die, das)
+        if any(w in lower for w in ["artikel", "der die das", "geschlecht", "der", "die", "das"]):
+            return (
+                "🇩🇪 **Die goldenen Regeln für deutsche Artikel (Der, Die, Das):**\n\n"
+                "1️⃣ **Maskulin (der):**\n"
+                "   • Endungen: *-ling, -or, -ist, -ismus, -ant* (z. B. der Schmetterling, der Motor, der Optimismus).\n"
+                "   • Tage, Monate und Jahreszeiten: *der Montag, der Januar, der Sommer*.\n\n"
+                "2️⃣ **Feminin (die):**\n"
+                "   • Endungen: *-ung, -heit, -keit, -schaft, -tion, -tät, -ik* (z. B. die Übung, die Freiheit, die Freundschaft, die Musik).\n"
+                "   • Fast alle Blumen und Bäume: *die Rose, die Eiche*.\n\n"
+                "3️⃣ **Neutral (das):**\n"
+                "   • Endungen: *-chen, -lein, -um, -ment* (z. B. das Mädchen, das Fräulein, das Zentrum, das Dokument).\n"
+                "   • Substantivierte Verben: *das Essen, das Leben*.\n\n"
+                "💡 **Telugu Hint:** జర్మన్‌లో వస్తువుల లింగభేదం (Gender) వ్యాకరణపరమైనది. ప్రతి నామవాచకాన్ని దాని ఆర్టికల్‌తో కలిపి గుర్తుంచుకోవాలి.\n\n"
+                "Möchtest du einen Beispielsatz mit einem dieser Wörter schreiben?"
+            )
+
+        # 6. Cases (Kasus: Akkusativ & Dativ)
+        if any(w in lower for w in ["akkusativ", "dativ", "kasus", "fälle", "genitiv"]):
+            return (
+                "🇩🇪 **Die deutschen Fälle im Überblick (Cases Guide):**\n\n"
+                "• **Nominativ (Subjekt):** Wer oder was handelt? (*Der Mann liest ein Buch*)\n"
+                "• **Akkusativ (Direktes Objekt):** Wen oder was? (*Ich sehe **den** Mann / ein**en** Hund*)\n"
+                "• **Dativ (Indirektes Objekt):** Wem? (*Ich helfe **dem** Mann / de**r** Frau*)\n\n"
+                "📌 **Wichtige Präpositionen:**\n"
+                "• Immer Akkusativ: *durch, für, gegen, ohne, um*\n"
+                "• Immer Dativ: *aus, bei, mit, nach, seit, von, zu*\n\n"
+                "Telugu వివరణ: తెలుగులో విభక్తులు (ద్వితీయ, తృతీయ విభక్తులు) ఉన్నట్లే, జర్మన్‌లో ఈ 4 కేసులు వాక్య నిర్మాణానికి అత్యంత కీలకం!\n\n"
+                "Soll ich dir ein paar Übungsfragen dazu stellen?"
+            )
+
+        # 7. Word Order (Satzstellung / V2)
+        if any(w in lower for w in ["satzstellung", "wortstellung", "verb position", "v2", "weil", "dass"]):
+            return (
+                "🇩🇪 **Deutsche Satzstellung (Word Order Mastery):**\n\n"
+                "1️⃣ **Hauptsatz (Main Clause): Verb immer an Position 2!**\n"
+                "   • *Heute **gehe** ich ins Kino.* (Time element first -> Verb still 2nd!)\n\n"
+                "2️⃣ **Nebensatz (Subordinate Clause): Verb wandert ans Ende!**\n"
+                "   • Konjunktionen wie *weil, dass, obwohl, wenn* schicken das Verb ans Satzende:\n"
+                "   • *Ich lerne Deutsch, weil ich in Deutschland studieren **möchte**.*\n\n"
+                "3️⃣ **Perfekt (Vergangenheit):**\n"
+                "   • Hilfsverb (haben/sein) an Position 2, Partizip II am Ende:\n"
+                "   • *Ich **habe** gestern ein Buch **gelesen**.*\n\n"
+                "Versuche doch einmal einen Satz mit 'weil' zu bilden!"
+            )
+
+        # 8. Telugu translations or inquiries in German
+        if any(w in lower for w in ["telugu", "übersetzung", "bedeutung", "was bedeutet", "was heisst", "was heißt"]):
+            return (
+                "🇩🇪 ↔ 🇮🇳 **Deutsch-Telugu Sprachbrücke (Bilingual Reference):**\n\n"
+                "• **'Guten Morgen, wie geht es Ihnen?'**\n"
+                "  → శుభోదయం, మీరు ఎలా ఉన్నారు?\n"
+                "• **'Ich lerne jeden Tag fleißig Deutsch.'**\n"
+                "  → నేను ప్రతిరోజూ శ్రద్ధగా జర్మన్ నేర్చుకుంటున్నాను.\n"
+                "• **'Könnten Sie mir bitte helfen?'**\n"
+                "  → దయచేసి నాకు సహాయం చేయగలరా?\n"
+                "• **'Alles Gute zum Geburtstag!'**\n"
+                "  → పుట్టినరోజు శుభాకాంక్షలు!\n\n"
+                "Welchen deutschen oder Telugu Satz möchtest du als Nächstes übersetzen?"
+            )
+
+        # 9. Conversational German response
+        snippets = [s.strip() for s in re.split(r"[.?!,]", text) if len(s.strip()) > 2]
+        key_snippet = f"\"{snippets[0]}\"" if snippets else "deinen Gedanken"
+
+        return (
+            f"Sehr schön formuliert! Dein Ausdruck über {key_snippet} klingt schon sehr lebendig. 🇩🇪✨\n\n"
+            f"💡 **Tipp für '{level}' Niveau:**\n"
+            f"Um deinen Satz noch muttersprachlicher klingen zu lassen, kannst du Modalpartikeln wie *'mal'*, *'doch'* oder *'ja'* einbauen. "
+            f"Zum Beispiel: *\"Das ist ja wirklich eine interessante Idee!\"*\n\n"
+            f"Erzähl mir gerne mehr dazu: Was denkst du als Nächstes darüber?"
+        )
+
+    # =========================================================================
+    # KOREAN TUTOR ENGINE (한국어)
+    # =========================================================================
+    def _handle_korean_tutor(self, text: str, level: str, grammar: dict) -> str:
+        lower = text.lower()
+        corrections = grammar.get("corrections", [])
+
+        # 1. Corrections first if any critical grammar error detected
+        if corrections:
+            primary = corrections[0]
+            return (
+                f"정말 훌륭한 시도예요! 한국어 문장을 함께 다듬어 볼까요? 🎯🇰🇷\n\n"
+                f"**문장 교정 및 자연스러운 표현:**\n"
+                f"• 작성하신 문장: *\"{text}\"*\n"
+                f"• 추천 문장: **\"{grammar['corrected_text']}\"**\n\n"
+                f"💡 **문법 설명 ({primary['category']}):**\n"
+                f"{primary['explanation']}\n\n"
+                f"📌 **Telugu వివరణ (తెలుగు అర్థం):**\n"
+                f"కొరియన్ భాషలో గౌరవప్రదంగా మాట్లాడేటప్పుడు **\"{grammar['corrected_text']}\"** అనేది సరైన మరియు సహజమైన రూపం.\n\n"
+                f"이 패턴을 사용해서 다른 문장도 만들어 보시겠어요?"
+            )
+
+        # 2. Greetings
+        if any(w in lower for w in ["안녕", "안녕하세요", "안녕하십니까", "hi", "hello", "좋은 아침", "반가워요", "반갑습니다"]):
+            return (
+                "안녕하세요! 링구아스피어 한국어 학습 스튜디오에 오신 것을 진심으로 환영합니다! 🇰🇷✨\n\n"
+                "오늘 하루는 어떠셨나요? (How was your day? / ఈ రోజు మీ రోజు ఎలా గడిచింది?)\n\n"
+                "오늘 함께 연습해 볼 흥미로운 주제들입니다:\n"
+                "• 🗣️ **일상 한국어 대화 (Daily Conversation)** — 날씨, 음식, 취미 이야기 나누기.\n"
+                "• 📝 **조사 마스터 (Particles)** — 은/는(주제) vs 이/가(주격), 을/를(목적격) 차이점.\n"
+                "• 🌸 **존댓말과 높임말 (Polite Speech)** — 해요체(-아요/어요)와 하십시오체(-습니다) 익히기.\n"
+                "• 🇮🇳 **한국어 ↔ 텔루구어 번역 (Translation)** — 핵심 단어와 관용구 배우기.\n\n"
+                "어떤 주제부터 먼저 이야기해 볼까요? 편하게 말씀해 주세요!"
+            )
+
+        # 3. How are you queries
+        if any(w in lower for w in ["잘 지냈어요", "어떻게 지내세요", "어떠세요", "식사하셨어요", "밥 먹었어요"]):
+            return (
+                "네, 저는 아주 활기차게 잘 지내고 있습니다! 물어봐 주셔서 감사해요. 😊🇰🇷\n\n"
+                "💡 **한국 문화 꿀팁 (K-Culture Insight):**\n"
+                "한국에서는 친근한 안부 인사로 *\"식사하셨어요?\"* 또는 *\"밥 먹었어요?\"*(Did you eat?)라고 자주 묻습니다. "
+                "이는 실제로 식사 여부를 묻는 것뿐만 아니라 상대방을 챙기는 따뜻한 인사입니다.\n\n"
+                "스왑나님은 오늘 식사 맛있게 하셨나요? 오늘 무엇을 드셨는지 말씀해 주세요!"
+            )
+
+        # 4. Thank you
+        if any(w in lower for w in ["감사", "고마워", "고맙습니다", "감사합니다", "gamsahamnida"]):
+            return (
+                "천만에요! 별말씀을요! (You're very welcome! / మీకు స్వాగతం! 🌟)\n\n"
+                "한국어 실력이 날마다 쑥쑥 늘고 있어요.\n"
+                "새로 배우고 싶은 한국어 단어나 문장이 있으신가요?"
+            )
+
+        # 5. Korean Particles (조사: 은/는, 이/가, 을/를)
+        if any(w in lower for w in ["은/는", "이/가", "을/를", "조사", "particle", "은", "는", "이", "가"]):
+            return (
+                "🇰🇷 **한국어 핵심 조사 완벽 정리 (Korean Particles Guide):**\n\n"
+                "1️⃣ **은 / 는 (주제 조사 - Topic Marker):**\n"
+                "   • 문장의 '큰 주제'를 معرفی하거나 다른 것과의 '대조'를 나타냅니다.\n"
+                "   • 받침 있음: **은** (선생님은) / 받침 없음: **는** (저는)\n"
+                "   • 예: *저는 학생입니다.* (Speaking of me, I am a student.)\n\n"
+                "2️⃣ **이 / 가 (주격 조사 - Subject Marker):**\n"
+                "   • 새로운 정보나 특정 행위의 주체를 '지목'할 때 씁니다.\n"
+                "   • 받침 있음: **이** (비가, 책이) / 받침 없음: **가** (날씨가)\n"
+                "   • 예: *비가 와요.* (Rain is falling.)\n\n"
+                "3️⃣ **을 / 를 (목적격 조사 - Object Marker):**\n"
+                "   • 행동의 직접적인 대상(목적어)에 붙입니다.\n"
+                "   • 받침 있음: **을** (밥을 먹어요) / 받침 없음: **를** (사과를 좋아해요)\n\n"
+                "💡 **Telugu Hint:** తెలుగులో 'ను/ని' (ద్వితీయా విభక్తి) లాగే కొరియన్‌లో '을/를' వాడతారు.\n\n"
+                "이 조사들을 넣어서 문장 하나를 만들어 보시겠어요?"
+            )
+
+        # 6. Polite Speech & Endings (존댓말, 높임말)
+        if any(w in lower for w in ["존댓말", "반말", "높임말", "해요체", "습니다", "아요", "어요"]):
+            return (
+                "🇰🇷 **한국어 존댓말 체계 (Polite & Formal Speech Styles):**\n\n"
+                "1️⃣ **해요체 (Informal Polite - 가장 널리 쓰임):**\n"
+                "   • 일상 대화에서 어른이나 동료에게 정중하게 말할 때 사용합니다.\n"
+                "   • 양성모음 (ㅏ, ㅗ) 뒤: **-아요** (가요, 봐요)\n"
+                "   • 음성모음 (ㅓ, ㅜ, ㅣ 등) 뒤: **-어요** (먹어요, 마셔요)\n"
+                "   • 하다 동사: **-해요** (공부해요, 운동해요)\n\n"
+                "2️⃣ **하십시오체 (Formal Polite - 공식적인 자리, 뉴스, 면접):**\n"
+                "   • 받침 있음: **-습니다** (반갑습니다, 먹습니다)\n"
+                "   • 받침 없음: **-ㅂ니다** (감사합니다, 갑니다)\n\n"
+                "3️⃣ **겸칭 (Humble Pronoun):**\n"
+                "   • 존댓말을 쓸 때는 '나'(na) 대신 반드시 **'저'(jeo)**를 사용해야 예의가 바릅니다.\n"
+                "   • 예: *저도 그렇게 생각해요.*\n\n"
+                "이해가 쏙쏙 되셨나요? 평소 자주 쓰시는 문장을 존댓말로 바꿔볼까요?"
+            )
+
+        # 7. Telugu & Korean Translations
+        if any(w in lower for w in ["telugu", "텔루구", "번역", "뜻", "무슨 뜻", "의미"]):
+            return (
+                "🇰🇷 ↔ 🇮🇳 **한국어-텔루구어 실용 표현 사전:**\n\n"
+                "• **'만나서 반갑습니다. 저는 스왑나입니다.'**\n"
+                "  → మిమ్మల్ని కలవడం చాలా సంతోషంగా ఉంది. నా పేరు స్왑న.\n"
+                "• **'오늘 날씨가 정말 화창하고 좋네요.'**\n"
+                "  → ఈ రోజు వాతావరణం ఎంతో ఆహ్లాదకరంగా మరియు బాగుంది.\n"
+                "• **'한국어를 열심히 공부하고 있어요.'**\n"
+                "  → నేను ఎంతో శ్రద్ధగా కొరియన్ భాషను నేర్చుకుంటున్నాను.\n"
+                "• **'도와주셔서 진심으로 감사합니다.'**\n"
+                "  → సహాయం చేసినందుకు హృదయపూర్వక ధన్యవాదాలు.\n\n"
+                "다른 알고 싶은 표현이 있으신가요? 언제든 물어보세요!"
+            )
+
+        # 8. General conversational Korean response
+        snippets = [s.strip() for s in re.split(r"[.?!,]", text) if len(s.strip()) > 1]
+        key_snippet = f"\"{snippets[0]}\"" if snippets else "말씀하신 내용"
+
+        return (
+            f"네, {key_snippet}에 대해 말씀해 주셨군요! 아주 흥미로운 이야기예요. 🇰🇷✨\n\n"
+            f"💡 **'{level}' 학습자를 위한 팁:**\n"
+            f"문장을 말할 때 연결어미(예: *-는데*, *-어서/아서*, *-고*)를 사용하면 두 문장을 자연스럽게 이어 말할 수 있어요.\n"
+            f"예: *\"날씨가 좋아서 산책을 가고 싶어요.\"*\n\n"
+            f"이에 대해 조금 더 자세히 이야기해 주시겠어요?"
+        )
+
+    # =========================================================================
+    # ENGLISH TUTOR ENGINE (English & Telugu Support)
+    # =========================================================================
+    def _handle_english_tutor(self, text: str, level: str, grammar: dict) -> str:
+        lower = text.lower()
+        corrections = grammar.get("corrections", [])
+
         # 1. Greetings & Introductions
         if any(w in lower for w in ["hello", "hi", "hey", "good morning", "good evening", "good afternoon"]):
-            reply = (
+            return (
                 "Hello Swapna! Welcome to your LinguaSphere AI Learning Studio! 🌟✨\n\n"
                 "I am your personal AI language tutor. How are you feeling today?\n\n"
                 "Here are a few great ways we can practice right now:\n"
-                "• 🗣️ **Conversational Practice** — Chat about your day, travel, books, or interests.\n"
+                "• 🗣️ **Conversational Practice** — Chat about your day, travel, career, or interests.\n"
                 "• 📝 **Grammar & Sentence Polishing** — Share any sentence, and I'll analyze and elevate it.\n"
                 "• 🇮🇳 **Telugu ↔ English Translation** — Ask how to express any Telugu phrase naturally in English.\n"
                 "• 💼 **Job Interview & Professional Prep** — Practice workplace dialogue and formal presentations.\n\n"
                 "What would you like to explore today?"
             )
 
-        # 2. Explicit Grammar Check Request or Sentences with Grammar Mistakes
-        elif any(phrase in lower for phrase in ["correct this", "is this correct", "check this", "fix this", "check my sentence", "did i say this right"]) or len(corrections) > 0:
+        # 2. Grammar Check Request or Sentences with Mistakes
+        if any(phrase in lower for phrase in ["correct this", "is this correct", "check this", "fix this", "check my sentence", "did i say this right"]) or len(corrections) > 0:
             if corrections:
                 primary = corrections[0]
-                reply = (
+                return (
                     f"Great initiative sharing your sentence! Let's polish it together: 🎯\n\n"
                     f"**Analysis & Correction:**\n"
-                    f"• Original: *\"{raw_text}\"*\n"
+                    f"• Original: *\"{text}\"*\n"
                     f"• Polished: **\"{grammar['corrected_text']}\"**\n\n"
                     f"💡 **Why this rule applies ({primary['category']}):**\n"
                     f"{primary['explanation']}\n\n"
@@ -238,25 +428,24 @@ class MultilingualAIService:
                     f"Can you try creating another sentence using this corrected pattern?"
                 )
             else:
-                reply = (
-                    f"Spot on! 🌟 Your sentence: **\"{raw_text}\"** is grammatically correct and flows very nicely!\n\n"
+                return (
+                    f"Spot on! 🌟 Your sentence: **\"{text}\"** is grammatically correct and flows very nicely!\n\n"
                     f"To make it sound even more sophisticated at your '{level}' level, you could say:\n"
-                    f"✨ *\"{self._elevate_sentence(raw_text)}\"*\n\n"
+                    f"✨ *\"{self._elevate_sentence(text)}\"*\n\n"
                     f"Would you like to try another phrase or move to a new topic?"
                 )
 
         # 3. Vocabulary / Meaning / Definition Request
-        elif any(k in lower for k in ["what does", "meaning of", "define", "what is", "how to use", "synonym"]):
-            vocab_info = self._explain_word_or_concept(raw_text)
-            reply = vocab_info
+        if any(k in lower for k in ["what does", "meaning of", "define", "what is", "how to use", "synonym"]):
+            return self._explain_word_or_concept(text)
 
         # 4. Telugu Translation & Telugu Queries
-        elif any(k in lower for k in ["in telugu", "translate to telugu", "telugu meaning", "telugu lo", "ardham", "artham"]):
-            reply = self._handle_telugu_query(raw_text)
+        if any(k in lower for k in ["in telugu", "translate to telugu", "telugu meaning", "telugu lo", "ardham", "artham", "తెలుగు"]):
+            return self._handle_telugu_query(text)
 
         # 5. Job Interview / Professional English Practice
-        elif any(k in lower for k in ["interview", "job", "career", "introduce yourself", "resume"]):
-            reply = (
+        if any(k in lower for k in ["interview", "job", "career", "introduce yourself", "resume", "hiring"]):
+            return (
                 "Excellent! Let's run a realistic **Mock Interview Practice** session! 💼👔\n\n"
                 "**Interviewer Question:**\n"
                 "\"Tell me about yourself, your core strengths, and what motivates you to learn and grow every day.\"\n\n"
@@ -269,8 +458,8 @@ class MultilingualAIService:
             )
 
         # 6. Idioms & Expressions
-        elif any(k in lower for k in ["idiom", "phrasal verb", "expression", "proverb", "slang"]):
-            reply = (
+        if any(k in lower for k in ["idiom", "phrasal verb", "expression", "proverb", "slang"]):
+            return (
                 "Idioms and phrasal verbs give your English natural color and fluency! 🌈\n\n"
                 "Here are two essential expressions used by fluent speakers:\n\n"
                 "1️⃣ **'To hit the nail on the head'** (సరిగ్గా చెప్పడం)\n"
@@ -283,17 +472,7 @@ class MultilingualAIService:
             )
 
         # 7. General Interactive Conversation (Contextual & Engaging)
-        else:
-            thoughtful_response = self._generate_conversational_response(raw_text, level)
-            reply = thoughtful_response
-
-        return {
-            "response": reply,
-            "corrections": corrections,
-            "suggestions": improvements,
-            "language": language,
-            "level": level
-        }
+        return self._generate_conversational_response(text, level)
 
     def _elevate_sentence(self, sentence: str) -> str:
         replacements = [
@@ -316,7 +495,6 @@ class MultilingualAIService:
         return res
 
     def _explain_word_or_concept(self, query: str) -> str:
-        # Match target word precisely
         target = ""
         patterns = [
             r"what\s+does\s+([a-zA-Z\-]+)\s+mean",
@@ -334,7 +512,6 @@ class MultilingualAIService:
             target = query.strip().split()[-1].strip("?\"'.,")
         target_lower = target.lower()
 
-        # Curated vocabulary database with Telugu translations and IPA
         vocab_db = {
             "resilience": {
                 "ipa": "/rɪˈzɪl.jəns/",
@@ -413,13 +590,14 @@ class MultilingualAIService:
             "  → *\"Did you manage to complete your assignment on schedule?\"*\n\n"
             "• **'ఈ రోజు వాతావరణం చాలా ఆహ్లాదకరంగా ఉంది'**\n"
             "  → *\"The weather is remarkably pleasant today.\"*\n\n"
+            "• **'మనం నిరంతరం సాధన చేస్తేనే నైపుణ్యం పెరుగుతుంది'**\n"
+            "  → *\"Consistent practice is the key to mastering any skill.\"*\n\n"
             "Tell me any Telugu sentence or phrase you're thinking of, and I'll give you the most natural English expression for it!"
         )
 
     def _generate_conversational_response(self, text: str, level: str) -> str:
         lower = text.lower()
         
-        # Categorized Conversational Intent
         if any(w in lower for w in ["how are you", "how r u", "how do you do"]):
             return (
                 "I'm feeling energized and ready to help you excel in your language journey! 😊✨\n\n"
@@ -453,7 +631,6 @@ class MultilingualAIService:
                 "What kind of project or task are you currently focused on?"
             )
 
-        # Dynamic reflective fallback that echoes the user's specific context
         snippets = [s.strip() for s in re.split(r"[.?!,]", text) if len(s.strip()) > 3]
         key_snippet = f"\"{snippets[0]}\"" if snippets else "your thought"
 
@@ -465,70 +642,194 @@ class MultilingualAIService:
         )
 
     # =========================================================================
-    # 2. Grammar Correction & Sentence Improvement Lab
+    # 2. Grammar Correction & Sentence Improvement Lab (Multilingual)
     # =========================================================================
     def analyze_grammar(self, text: str, language: str = "english") -> dict:
         corrections = []
         improvements = []
-        corrected_text = text
-        score = 95.0
+        corrected_text = text.strip()
+        score = 98.0
+        lang_lower = language.lower()
 
-        if language == "german":
-            rules = [
-                (r"\bich bin gut\b", "mir geht es gut", "In German, say 'Mir geht es gut' instead of 'Ich bin gut'.", "Idiomatic Usage"),
-                (r"\bdas wetter ist gut heute\b", "Das Wetter ist heute gut", "Time expressions ('heute') usually precede the predicate adjective ('gut').", "Word Order"),
-                (r"\bin 2026\b", "im Jahr 2026 / 2026", "In German, write years bare ('2026') or as 'im Jahr 2026'.", "Preposition Usage")
+        # ---------------------------------------------------------------------
+        # GERMAN RULES (Duden-Based NLP Engine)
+        # ---------------------------------------------------------------------
+        if lang_lower == "german":
+            german_rules = [
+                # Idiomatic expressions
+                (r"\bich bin gut\b", "mir geht es gut", "In German, expressing well-being requires 'Mir geht es gut'. 'Ich bin gut' means you are skilled at something.", "Idiom & Usage"),
+                (r"\bwie gehts dir\b", "Wie geht es dir?", "Add correct punctuation and capitalization.", "Punctuation"),
+                # Time word order (TeKaMoLo)
+                (r"\bdas wetter ist gut heute\b", "Das Wetter ist heute gut", "In German, time expressions ('heute') precede the predicate adjective ('gut').", "TeKaMoLo Word Order"),
+                (r"\bin 202[0-9]\b", "im Jahr 2026 / 2026", "In German, say 'im Jahr [Jahr]' or state the year directly without 'in'.", "Preposition Usage"),
+                # Auxiliary verb in Perfekt (sein vs haben)
+                (r"\bich habe gegangen\b", "ich bin gegangen", "Verbs of movement/change of location take 'sein' in the Perfekt tense.", "Auxiliary Verb (Perfekt)"),
+                (r"\bich habe geschwommen\b", "ich bin geschwommen", "Movement verbs like 'schwimmen' use 'sein' as auxiliary in Perfekt.", "Auxiliary Verb (Perfekt)"),
+                (r"\bich habe geblieben\b", "ich bin geblieben", "'Bleiben' (to stay) requires the auxiliary 'sein' in Perfekt.", "Auxiliary Verb (Perfekt)"),
+                (r"\bich habe gekommen\b", "ich bin gekommen", "Verbs of arrival take 'sein' in Perfekt.", "Auxiliary Verb (Perfekt)"),
+                # Cases and prepositions (Dative vs Accusative)
+                (r"\bmit der Mann\b", "mit dem Mann", "The preposition 'mit' always requires Dativ masculine ('dem').", "Dativ Case"),
+                (r"\bmit die Frau\b", "mit der Frau", "The preposition 'mit' requires Dativ feminine ('der').", "Dativ Case"),
+                (r"\bzu die Schule\b", "zur Schule", "'Zu' takes Dativ and contracts: zu + der = zur.", "Preposition Contraction"),
+                (r"\bzu dem Arzt\b", "zum Arzt", "'Zu' takes Dativ and contracts: zu + dem = zum.", "Preposition Contraction"),
+                (r"\bfür den Frau\b", "für die Frau", "The preposition 'für' takes Akkusativ feminine ('die').", "Akkusativ Case"),
+                (r"\bich sehe der Mann\b", "ich sehe den Mann", "Direct objects of transitive verbs take Akkusativ masculine ('den').", "Akkusativ Object"),
+                (r"\bich habe ein Hund\b", "ich habe einen Hund", "'Hund' is masculine; direct object requires 'einen Hund' (Akkusativ).", "Akkusativ Indefinite Article"),
+                # Subordinate clauses (Verb-Final rule)
+                (r"\bweil ich habe Zeit\b", "weil ich Zeit habe", "Subordinate conjunction 'weil' moves the conjugated verb to the end of the clause.", "Subordinate Clause (Verb-End)"),
+                (r"\bdass er kommt morgen\b", "dass er morgen kommt", "Conjunction 'dass' requires the verb at the very end of the subordinate clause.", "Subordinate Clause (Verb-End)"),
+                (r"\bobwohl es regnet heute\b", "obwohl es heute regnet", "Subordinate conjunction 'obwohl' sends the verb 'regnet' to the end.", "Subordinate Clause (Verb-End)"),
+                # Negation
+                (r"\bich habe nicht Geld\b", "ich habe kein Geld", "Nouns without a definite article are negated using 'kein', not 'nicht'.", "Negation (Kein vs Nicht)"),
+                (r"\bich habe nicht Zeit\b", "ich habe keine Zeit", "Negate indefinite/uncountable nouns with 'keine'.", "Negation"),
             ]
-            for pat, rep, exp, cat in rules:
-                if re.search(pat, corrected_text, re.IGNORECASE):
-                    score -= 12.0
-                    corrections.append({"original": pat, "correction": rep, "explanation": exp, "category": cat})
-                    corrected_text = re.sub(pat, rep, corrected_text, count=1, flags=re.IGNORECASE)
-            improvements.append("Use German modal particles like 'doch', 'mal', or 'ja' for natural cadence.")
 
-        elif language == "korean":
-            if "나는 학생" in text and "입니다" not in text and "이야" not in text:
-                score -= 10.0
-                corrections.append({
-                    "original": "나는 학생",
-                    "correction": "저는 학생입니다 (Formal) / 나는 학생이야 (Casual)",
-                    "explanation": "Korean sentences need a copula predicate like 이다/입니다.",
-                    "category": "Sentence Ending"
-                })
-                corrected_text = text.replace("나는 학생", "저는 학생입니다")
-            improvements.append("Pay close attention to Topic particles (은/는) vs Subject particles (이/가).")
-
-        else: # English
-            rules = [
-                (r"\bi is\b", "I am", "Subject-verb agreement: 'I' takes 'am'.", "Subject-Verb Agreement"),
-                (r"\byou is\b", "you are", "Subject-verb agreement: 'you' takes 'are'.", "Subject-Verb Agreement"),
-                (r"\bhe have\b", "he has", "Third-person singular: 'he' takes 'has'.", "Verb Agreement"),
-                (r"\bshe have\b", "she has", "Third-person singular: 'she' takes 'has'.", "Verb Agreement"),
-                (r"\bshe don'?t\b", "she doesn't", "Third-person singular: 'she' takes 'does not' / 'doesn't'.", "Subject-Verb Agreement"),
-                (r"\bhe don'?t\b", "he doesn't", "Third-person singular: 'he' takes 'does not' / 'doesn't'.", "Subject-Verb Agreement"),
-                (r"\bit don'?t\b", "it doesn't", "Third-person singular: 'it' takes 'does not' / 'doesn't'.", "Subject-Verb Agreement"),
-                (r"\bdid went\b", "did go", "Past simple auxiliary 'did' takes base verb 'go'.", "Double Past Tense"),
-                (r"\bdid ate\b", "did eat", "Past simple auxiliary 'did' takes base verb 'eat'.", "Double Past Tense"),
-                (r"\bdid saw\b", "did see", "Past simple auxiliary 'did' takes base verb 'see'.", "Double Past Tense"),
-                (r"\ba apple\b", "an apple", "Use indefinite article 'an' before vowel sounds.", "Article Usage"),
-                (r"\ba hour\b", "an hour", "The 'h' in hour is silent; use 'an'.", "Article Usage"),
-                (r"\bdepends of\b", "depends on", "Preposition collocation: 'depend' takes 'on'.", "Collocation"),
-                (r"\blisten music\b", "listen to music", "The verb 'listen' requires the preposition 'to' before an object.", "Preposition"),
-                (r"\bcongratulate for\b", "congratulate on", "Preposition collocation: we congratulate someone 'on' their achievement.", "Collocation"),
-                (r"\bmarried with\b", "married to", "In English, say 'married to' someone.", "Preposition Collocation"),
-                (r"\blook forward to meet\b", "look forward to meeting", "'Look forward to' is followed by a gerund (-ing form).", "Gerund Usage"),
-                (r"\bdiscuss about\b", "discuss", "The verb 'discuss' is transitive and does not take 'about'.", "Redundant Preposition")
-            ]
-            for pat, rep, exp, cat in rules:
+            for pat, rep, exp, cat in german_rules:
                 if re.search(pat, corrected_text, re.IGNORECASE):
                     score -= 10.0
-                    corrections.append({"original": pat.replace("\\b", ""), "correction": rep, "explanation": exp, "category": cat})
+                    corrections.append({"original": pat.replace("\\b", "").strip(), "correction": rep, "explanation": exp, "category": cat})
+                    corrected_text = re.sub(pat, rep, corrected_text, count=1, flags=re.IGNORECASE)
+
+            # German noun capitalization check
+            common_de_nouns = ["buch", "haus", "frau", "mann", "zeit", "wasser", "freund", "arbeit", "schule", "sprache", "stadt"]
+            for cn in common_de_nouns:
+                if re.search(rf"\b{cn}\b", corrected_text):
+                    score -= 3.0
+                    corrections.append({
+                        "original": cn,
+                        "correction": cn.capitalize(),
+                        "explanation": f"All German nouns must begin with a capital letter ('{cn.capitalize()}').",
+                        "category": "Noun Capitalization"
+                    })
+                    corrected_text = re.sub(rf"\b{cn}\b", cn.capitalize(), corrected_text)
+
+            improvements.append("Use German modal particles like 'doch', 'mal', or 'ja' to sound natural in conversation.")
+            improvements.append("Remember the V2 rule: In standard main clauses, the conjugated verb is always position 2.")
+
+        # ---------------------------------------------------------------------
+        # KOREAN RULES (NIIED & Hangul Morphological Engine)
+        # ---------------------------------------------------------------------
+        elif lang_lower == "korean":
+            # Missing copula / predicate
+            if ("학생" in text or "선생님" in text or "사람" in text) and not any(k in text for k in ["입니다", "이야", "이에요", "예요", "이 아닙니다"]):
+                score -= 12.0
+                corrections.append({
+                    "original": text,
+                    "correction": text + "입니다",
+                    "explanation": "Korean sentences require a predicate copula like '입니다' (formal) or '이에요/예요' (polite).",
+                    "category": "Sentence Predicate Copula"
+                })
+                corrected_text = corrected_text + "입니다"
+
+            # Pronoun & honorific mismatch (나 vs 저 with polite endings)
+            if re.search(r"\b나는\b.*(입니다|습니다|어요|아요|해요)", text):
+                score -= 10.0
+                corrections.append({
+                    "original": "나는",
+                    "correction": "저는",
+                    "explanation": "When using polite or formal sentence endings (-요, -습니다), use the humble pronoun '저' (저는) instead of '나' (나는).",
+                    "category": "Honorific Concordance"
+                })
+                corrected_text = re.sub(r"\b나는\b", "저는", corrected_text)
+
+            # Missing object particle
+            if "사과 좋아해요" in text or "사과를" not in text and "사과 좋아" in text:
+                score -= 8.0
+                corrections.append({
+                    "original": "사과 좋아해요",
+                    "correction": "사과를 좋아해요",
+                    "explanation": "Add the object particle '를' after vowel-ending nouns ('사과를') for clear grammatical flow.",
+                    "category": "Object Particle (을/를)"
+                })
+                corrected_text = corrected_text.replace("사과 좋아해요", "사과를 좋아해요")
+
+            # Missing destination particle
+            if "학교 가요" in text or "집 가요" in text:
+                score -= 8.0
+                corrections.append({
+                    "original": "학교 가요 / 집 가요",
+                    "correction": "학교에 가요 / 집에 가요",
+                    "explanation": "Add the destination particle '에' (at/to) before movement verbs like '가다' (to go).",
+                    "category": "Direction Particle (에)"
+                })
+                corrected_text = corrected_text.replace("학교 가요", "학교에 가요").replace("집 가요", "집에 가요")
+
+            improvements.append("Remember the distinction: Topic particle '은/는' (context/contrast) vs Subject particle '이/가' (specific agent).")
+            improvements.append("In polite conversation, conclude verbs with informal polite '-아요/어요' or formal '-습니다'.")
+
+        # ---------------------------------------------------------------------
+        # ENGLISH RULES (Comprehensive Pedagogical Syntax Engine)
+        # ---------------------------------------------------------------------
+        else:
+            english_rules = [
+                # Subject-Verb Agreement
+                (r"\bi is\b", "I am", "Subject-verb agreement: 'I' takes 'am'.", "Subject-Verb Agreement"),
+                (r"\byou is\b", "you are", "Subject-verb agreement: 'you' takes 'are'.", "Subject-Verb Agreement"),
+                (r"\bwe is\b", "we are", "Plural subject 'we' takes 'are'.", "Subject-Verb Agreement"),
+                (r"\bthey is\b", "they are", "Plural subject 'they' takes 'are'.", "Subject-Verb Agreement"),
+                (r"\bhe have\b", "he has", "Third-person singular 'he' takes 'has'.", "Subject-Verb Agreement"),
+                (r"\bshe have\b", "she has", "Third-person singular 'she' takes 'has'.", "Subject-Verb Agreement"),
+                (r"\bit have\b", "it has", "Third-person singular 'it' takes 'has'.", "Subject-Verb Agreement"),
+                (r"\bshe don'?t\b", "she doesn't", "Third-person singular 'she' takes 'doesn't' (does not).", "Subject-Verb Agreement"),
+                (r"\bhe don'?t\b", "he doesn't", "Third-person singular 'he' takes 'doesn't' (does not).", "Subject-Verb Agreement"),
+                (r"\bit don'?t\b", "it doesn't", "Third-person singular 'it' takes 'doesn't' (does not).", "Subject-Verb Agreement"),
+                (r"\bone of my friend\b", "one of my friends", "'One of' is followed by a plural countable noun ('friends').", "Noun Number"),
+                (r"\beach of them have\b", "each of them has", "'Each' is grammatically singular and takes 'has'.", "Subject-Verb Agreement"),
+
+                # Double Past Tense / Auxiliary Concordance
+                (r"\bdid went\b", "did go", "The auxiliary 'did' takes the base form of the verb ('go').", "Double Past Tense"),
+                (r"\bdid ate\b", "did eat", "The auxiliary 'did' takes the base form of the verb ('eat').", "Double Past Tense"),
+                (r"\bdid saw\b", "did see", "The auxiliary 'did' takes the base form of the verb ('see').", "Double Past Tense"),
+                (r"\bdid came\b", "did come", "The auxiliary 'did' takes the base form of the verb ('come').", "Double Past Tense"),
+                (r"\bdid told\b", "did tell", "The auxiliary 'did' takes the base form of the verb ('tell').", "Double Past Tense"),
+                (r"\bdoes has\b", "does have", "Auxiliary 'does' takes base verb 'have'.", "Auxiliary Concordance"),
+
+                # Articles
+                (r"\ba apple\b", "an apple", "Use indefinite article 'an' before vowel sounds.", "Article Usage"),
+                (r"\ba orange\b", "an orange", "Use 'an' before vowel sounds.", "Article Usage"),
+                (r"\ba hour\b", "an hour", "The 'h' in hour is silent; use 'an'.", "Article Usage"),
+                (r"\ban university\b", "a university", "'University' starts with a 'yu' consonant glide; use 'a'.", "Article Usage"),
+                (r"\ban european\b", "a European", "'European' starts with a 'yu' sound; use 'a'.", "Article Usage"),
+
+                # Preposition Collocations
+                (r"\bdepends of\b", "depends on", "Preposition collocation: 'depend' takes 'on'.", "Preposition Collocation"),
+                (r"\blisten music\b", "listen to music", "The verb 'listen' requires 'to' before an object.", "Preposition"),
+                (r"\bcongratulate for\b", "congratulate on", "In English, we congratulate someone 'on' an achievement.", "Preposition Collocation"),
+                (r"\bmarried with\b", "married to", "In English, say 'married to' someone.", "Preposition Collocation"),
+                (r"\binterested with\b", "interested in", "Collocation: 'interested' takes 'in'.", "Preposition Collocation"),
+                (r"\bgood in english\b", "good at English", "Say 'good at' an activity or language.", "Preposition Collocation"),
+                (r"\bsimilar with\b", "similar to", "Collocation: 'similar' takes 'to'.", "Preposition Collocation"),
+                (r"\bafraid from\b", "afraid of", "Collocation: 'afraid' takes 'of'.", "Preposition Collocation"),
+                (r"\barrive to\b", "arrive at / in", "We arrive 'at' a place or 'in' a city/country.", "Preposition Collocation"),
+                (r"\blook forward to meet\b", "look forward to meeting", "'Look forward to' is followed by a gerund (-ing form).", "Gerund Usage"),
+                (r"\blook forward to see\b", "look forward to seeing", "'Look forward to' requires a gerund (-ing form).", "Gerund Usage"),
+
+                # Redundant Prepositions & Words
+                (r"\bdiscuss about\b", "discuss", "The verb 'discuss' is transitive and does not take 'about'.", "Redundant Preposition"),
+                (r"\bdescribe about\b", "describe", "'Describe' is transitive and directly takes the object.", "Redundant Preposition"),
+                (r"\breturn back\b", "return", "'Return' already means to go or come back.", "Redundancy"),
+                (r"\brevert back\b", "reply / revert", "Use 'reply' or 'revert' without 'back'.", "Redundancy"),
+                (r"\brepeat again\b", "repeat", "'Repeat' already means to do or say again.", "Redundancy"),
+
+                # Common Transfer & Confused Words
+                (r"\bi am having doubt\b", "I have a question", "In standard English, say 'I have a question'.", "Idiomatic Usage"),
+                (r"\bi am having two brothers\b", "I have two brothers", "Stative verbs like 'have' (possession/family) take simple present.", "Stative Verb"),
+                (r"\bmore better\b", "better", "Avoid double comparatives: 'better' is already comparative.", "Double Comparative"),
+                (r"\bmore easier\b", "easier", "Avoid double comparatives: use 'easier'.", "Double Comparative"),
+                (r"\byour right\b", "you're right", "'Your' is possessive; use 'you're' (you are).", "Confused Words"),
+                (r"\btheir is\b", "there is", "Use 'there is' for existence, not possessive 'their'.", "Confused Words"),
+            ]
+
+            for pat, rep, exp, cat in english_rules:
+                if re.search(pat, corrected_text, re.IGNORECASE):
+                    score -= 10.0
+                    corrections.append({"original": pat.replace("\\b", "").strip(), "correction": rep, "explanation": exp, "category": cat})
                     corrected_text = re.sub(pat, rep, corrected_text, count=1, flags=re.IGNORECASE)
 
             if "very good" in text.lower():
                 improvements.append("Elevate 'very good' with 'exceptional', 'outstanding', or 'superb'.")
             if "i think" in text.lower():
-                improvements.append("Try using 'In my perspective', 'From my viewpoint', or 'I believe'.")
+                improvements.append("Try using 'In my perspective', 'From my viewpoint', or 'I believe' to sound more authoritative.")
 
         score = max(50.0, min(100.0, score))
         return {
@@ -544,11 +845,6 @@ class MultilingualAIService:
     # 3. Telugu Translation Quizzes (Target Language <-> Telugu)
     # =========================================================================
     def get_telugu_translation_quizzes(self, language: str = "english") -> list[dict]:
-        """
-        Two-way translation quizzes between Target Language and Telugu (తెలుగు):
-        1) Read Sentence in Target Language -> Translate into Telugu
-        2) Read Telugu Sentence -> Translate into Target Language
-        """
         quizzes = {
             "english": [
                 {
@@ -642,6 +938,21 @@ class MultilingualAIService:
                     ],
                     "correct_index": 1,
                     "explanation": "'Ich lerne' = నేను నేర్చుకుంటున్నాను, 'die deutsche Sprache' = జర్మన్ భాష."
+                },
+                {
+                    "id": "te-de-3",
+                    "direction": "to_telugu",
+                    "direction_title": "Read German (Deutsch) → Translate to Telugu (తెలుగులోకి అనువదించండి)",
+                    "source_sentence": "Übung macht den Meister.",
+                    "telugu_sentence": "నిరంతర సాధన మనిషిని నిపుణుడిగా మారుస్తుంది (సాధనమున సమకూరు ధరలోన పనులు).",
+                    "options": [
+                        "సమయం ఎవరి కోసమూ ఆగదు.",
+                        "నిరంతర సాధన మనిషిని నిపుణుడిగా మారుస్తుంది (సాధనమున సమకూరు ధరలోన పనులు).",
+                        "పుస్తకాలు మన మంచి మిత్రులు.",
+                        "ఈ రోజు చాలా చలిగా ఉంది."
+                    ],
+                    "correct_index": 1,
+                    "explanation": "'Übung macht den Meister' అనేది ప్రసిద్ధ జర్మన్ సామెత ('Practice makes perfect')."
                 }
             ],
             "korean": [
@@ -674,6 +985,21 @@ class MultilingualAIService:
                     ],
                     "correct_index": 0,
                     "explanation": "'오늘' = ఈరోజు, '날씨가' = వాతావరణం, '정말 좋네요' = చాలా బాగుంది."
+                },
+                {
+                    "id": "te-ko-3",
+                    "direction": "to_telugu",
+                    "direction_title": "Read Korean (한국어) → Translate to Telugu (తెలుగులోకి అనువదించండి)",
+                    "source_sentence": "한국어를 배우는 것은 아주 재미있어요.",
+                    "telugu_sentence": "కొరియన్ భాష నేర్చుకోవడం చాలా ఆనందంగా ఉంది.",
+                    "options": [
+                        "కొరియన్ ఆహారం చాలా కారంగా ఉంటుంది.",
+                        "నేను కొరియాకు వెళ్లాలనుకుంటున్నాను.",
+                        "కొరియన్ భాష నేర్చుకోవడం చాలా ఆనందంగా ఉంది.",
+                        "ఈ సినిమా చాలా బాగుంది."
+                    ],
+                    "correct_index": 2,
+                    "explanation": "'한국어를 배우는 것은' = కొరియన్ భాష నేర్చుకోవడం, '아주 재미있어요' = చాలా ఆనందంగా ఉంది."
                 }
             ]
         }
@@ -736,6 +1062,16 @@ class MultilingualAIService:
                     "definition": "Intuitive flair, tact, and delicate sensitivity.",
                     "example": "Für diese Verhandlung braucht man diplomatisches Fingerspitzengefühl.",
                     "collocations": ["diplomatisches Fingerspitzengefühl"]
+                },
+                {
+                    "word": "Die Gemütlichkeit",
+                    "phonetic": "/ɡəˈmyːtlɪçkaɪ̯t/",
+                    "syllables": "Ge-müt-lich-keit",
+                    "part_of_speech": "noun (feminine)",
+                    "difficulty": "beginner",
+                    "definition": "A state of warmth, friendliness, and coziness.",
+                    "example": "Die Gemütlichkeit im Kaffeehaus war wunderbar.",
+                    "collocations": ["warme Gemütlichkeit", "Gemütlichkeit ausstrahlen"]
                 }
             ],
             "korean": [
@@ -758,6 +1094,16 @@ class MultilingualAIService:
                     "definition": "Karmic tie, fateful destiny connecting people through time.",
                     "example": "우리가 만난 것도 깊은 인연입니다.",
                     "collocations": ["소중한 인연", "인연을 맺다"]
+                },
+                {
+                    "word": "정 (Jeong)",
+                    "phonetic": "/t͡ɕʌŋ/",
+                    "syllables": "Jeong",
+                    "part_of_speech": "noun",
+                    "difficulty": "beginner",
+                    "definition": "Deep, warm emotional bond and affection developed over time.",
+                    "example": "오래 알고 지낸 이웃과 깊은 정이 들었어요.",
+                    "collocations": ["정이 많다", "정이 들다"]
                 }
             ]
         }
@@ -774,11 +1120,11 @@ class MultilingualAIService:
 
         if language == "german":
             speaker = "Interviewer (Deutsch)"
-            feedback = "Gute Aussprache und klare Satzstruktur."
+            feedback = "Gute Aussprache und klare Satzstruktur im Deutschen."
             next_prompt = "Könnten Sie mir mehr über Ihre bisherigen Erfahrungen und Stärken erzählen?"
         elif language == "korean":
             speaker = "면접관 (Interviewer)"
-            feedback = "자연스러운 존댓말 사용입니다."
+            feedback = "자연스러운 존댓말 사용과 명확한 의사전달입니다."
             next_prompt = "이 프로젝트에서 본인이 가장 주도적으로 해결한 문제는 무엇이었나요?"
         else:
             speaker = "Interviewer (Hiring Lead)"
@@ -870,10 +1216,6 @@ class MultilingualAIService:
     # 8. Daily Practice Challenges
     # =========================================================================
     def get_daily_practice(self, language: str = "english", level: str = "intermediate") -> dict:
-        """
-        Returns structured daily workout including Idiom of the Day,
-        Grammar Puzzle, Dialogue Scenario, and Sentence Construction Challenge.
-        """
         challenges = {
             "english": {
                 "day_title": "Daily English Workout & Reflex Builder",
