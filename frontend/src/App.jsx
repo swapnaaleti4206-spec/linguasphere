@@ -97,7 +97,7 @@ export default function App() {
             <Dashboard user={user} onNavigateTab={setCurrentTab} language={selectedLanguage} />
           )}
           {currentTab === 'chat' && (
-            <TutorChat user={user} level={selectedLevel} language={selectedLanguage} />
+            <SpeakingPractice user={user} level={selectedLevel} language={selectedLanguage} />
           )}
           {currentTab === 'grammar' && (
             <GrammarLab language={selectedLanguage} />

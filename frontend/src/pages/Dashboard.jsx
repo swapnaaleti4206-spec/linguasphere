@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
+import { speakText } from '../utils/speech';
 import {
   Flame,
   CheckCircle,
@@ -11,15 +12,36 @@ import {
   ChevronRight,
   Mic,
   Volume2,
-  Users,
-  Briefcase,
-  Play
+  CalendarCheck,
+  Quote
 } from 'lucide-react';
 
 export default function Dashboard({ user, onNavigateTab, language = 'english' }) {
   const [stats, setStats] = useState(null);
   const [mistakes, setMistakes] = useState([]);
+  const [dailyData, setDailyData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const defaultIdioms = {
+    english: {
+      phrase: "Hit the nail on the head",
+      meaning: "To describe exactly what is causing a situation or problem.",
+      telugu_meaning: "సరిగ్గా చెప్పడం / వాస్తవాన్ని కచ్చితంగా వ్యక్తపరచడం",
+      example: "Swapna hit the nail on the head when presenting the project roadmap."
+    },
+    german: {
+      phrase: "Daumen drücken",
+      meaning: "To cross one's fingers; wish someone good luck.",
+      telugu_meaning: "మంచి జరగాలని కోరుకోవడం (ఆల్ ది బెస్ట్ చెప్పడం)",
+      example: "Ich drücke dir für deine morgige Präsentation ganz fest die Daumen!"
+    },
+    korean: {
+      phrase: "발이 넓다 (Bal-i neolp-da)",
+      meaning: "To have a wide circle of acquaintances; well-connected.",
+      telugu_meaning: "చాలా మంది పరిచయస్థులు మరియు మంచి సంబంధాలు కలిగి ఉండడం",
+      example: "그분은 발이 넓어서 아는 사람이 아주 많아요."
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -28,12 +50,14 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
   async function loadData() {
     try {
       setLoading(true);
-      const [statsData, mistakesData] = await Promise.all([
-        api.getDashboardStats(),
-        api.getGrammarMistakes(5)
+      const [statsData, mistakesData, dailyPracticeData] = await Promise.all([
+        api.getDashboardStats().catch(() => null),
+        api.getGrammarMistakes(5).catch(() => []),
+        api.getDailyPractice(language, user?.level || 'intermediate').catch(() => null)
       ]);
       setStats(statsData);
       setMistakes(mistakesData || []);
+      setDailyData(dailyPracticeData);
     } catch (err) {
       console.error('Failed to load dashboard:', err);
     } finally {
@@ -54,16 +78,23 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
   const wordsCount = stats?.words_learned || 0;
   const mistakesCount = stats?.grammar_mistakes_logged || 0;
 
+  const currentIdiom = dailyData?.idiom?.phrase
+    ? dailyData.idiom
+    : (defaultIdioms[language] || defaultIdioms.english);
+
   return (
     <div className="page-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-      {/* Welcome Banner */}
+      
+      {/* 1. Welcome Banner */}
       <div className="card" style={{
         background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)',
         color: '#ffffff',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '28px 32px'
+        padding: '28px 32px',
+        flexWrap: 'wrap',
+        gap: '16px'
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -101,7 +132,7 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
         </button>
       </div>
 
-      {/* 4 Core Real-Time Metrics */}
+      {/* 2. Four Core Real-Time Metrics */}
       <div className="grid-4">
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: streakDays > 0 ? '#fef3c7' : 'var(--bg-secondary)', color: streakDays > 0 ? '#d97706' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -145,7 +176,126 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
       </div>
 
       {/* ========================================================================= */}
-      {/* NEW SECTION: 100% FREE AI ENGLISH SPEAKING PRACTICE STUDIO */}
+      {/* 3. FEATURED IDIOM OF THE DAY CARD (నేటి జాతీయం / సామెత) */}
+      {/* ========================================================================= */}
+      <section className="card" style={{
+        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.05))',
+        border: '1.5px solid rgba(245, 158, 11, 0.35)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '24px 28px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
+        boxShadow: '0 4px 20px rgba(245, 158, 11, 0.08)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              backgroundColor: 'rgba(245, 158, 11, 0.18)',
+              color: '#d97706',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              textTransform: 'uppercase'
+            }}>
+              🌟 Idiom of the Day ({language.toUpperCase()})
+            </span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              • నేటి జాతీయం / సామెత
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => speakText(currentIdiom.phrase, { language })}
+              className="btn btn-secondary btn-sm"
+              style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              title="Pronounce idiom aloud"
+            >
+              <Volume2 size={16} color="#d97706" />
+              <span>Listen Pronunciation</span>
+            </button>
+
+            <button
+              onClick={() => onNavigateTab('daily')}
+              className="btn btn-sm"
+              style={{
+                backgroundColor: '#d97706',
+                color: '#ffffff',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <span>Daily Practice & Puzzles</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Idiom Display */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
+          <Quote size={24} color="#d97706" style={{ transform: 'rotate(180deg)', flexShrink: 0 }} />
+          <h3 style={{
+            fontSize: '1.5rem',
+            fontWeight: 800,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.01em'
+          }}>
+            "{currentIdiom.phrase}"
+          </h3>
+        </div>
+
+        {/* Meaning & Telugu Translation */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '14px',
+          padding: '12px 16px',
+          backgroundColor: 'var(--bg-surface)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-light)'
+        }}>
+          <div>
+            <strong style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Meaning in English:
+            </strong>
+            <div style={{ fontSize: '0.94rem', color: 'var(--text-primary)', fontWeight: 600, marginTop: '2px' }}>
+              {currentIdiom.meaning}
+            </div>
+          </div>
+
+          {currentIdiom.telugu_meaning && (
+            <div>
+              <strong style={{ fontSize: '0.82rem', color: 'var(--primary)', textTransform: 'uppercase' }}>
+                తెలుగు అర్థం (Telugu Nuance):
+              </strong>
+              <div style={{ fontSize: '0.94rem', color: 'var(--primary-text)', fontWeight: 700, marginTop: '2px' }}>
+                {currentIdiom.telugu_meaning}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Practical Example */}
+        <div style={{
+          padding: '10px 14px',
+          borderRadius: 'var(--radius-md)',
+          backgroundColor: 'rgba(245, 158, 11, 0.08)',
+          fontSize: '0.88rem',
+          color: 'var(--text-secondary)'
+        }}>
+          <strong style={{ color: 'var(--text-primary)' }}>In Context:</strong> "{currentIdiom.example}"
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 4. 100% FREE AI ENGLISH SPEAKING PRACTICE STUDIO SECTION */}
       {/* ========================================================================= */}
       <section className="card" style={{
         background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(79, 70, 229, 0.08))',
@@ -181,7 +331,7 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
                 <Sparkles size={15} /> 100% Free • No Subscription Required
               </span>
               <span className="badge badge-primary" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
-                Interactive Voice AI
+                Coach Sarah 👩‍💼
               </span>
             </div>
 
@@ -216,13 +366,13 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
                 <Mic size={18} color="var(--primary)" /> Real-Time Voice Input
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                <Volume2 size={18} color="var(--primary)" /> AI Audio Response
+                <Volume2 size={18} color="var(--primary)" /> Coach Sarah Audio Responses
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                 <CheckCircle size={18} color="#16a34a" /> Instant Fluency Feedback
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                <Briefcase size={18} color="var(--primary)" /> Job Interview Scenarios
+                <CalendarCheck size={18} color="var(--primary)" /> Structured 2-Person Dialogue
               </div>
             </div>
 
@@ -286,7 +436,7 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
                 justifyContent: 'space-between'
               }}>
                 <span style={{ fontWeight: 600 }}>🎙️ Interactive Voice Practice</span>
-                <span style={{ opacity: 0.85 }}>Human Learner ↔ AI Speaking Partner</span>
+                <span style={{ opacity: 0.85 }}>Human Learner ↔ Coach Sarah</span>
               </div>
             </div>
             <div style={{ textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -296,7 +446,7 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
         </div>
       </section>
 
-      {/* Progress & Skills Grid */}
+      {/* 5. Progress & Skills Grid */}
       <div className="grid-2">
         {/* Real-time Skill Competency */}
         <div className="card">
@@ -358,7 +508,7 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
         </div>
       </div>
 
-      {/* Suggested Next Actions */}
+      {/* 6. Suggested Learning Practices */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
           <Sparkles size={20} color="var(--primary)" />
@@ -381,20 +531,20 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
 
           <div
             className="card"
-            onClick={() => onNavigateTab('speaking')}
+            onClick={() => onNavigateTab('daily')}
             style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px' }}
           >
             <div>
-              <span className="badge badge-success" style={{ marginBottom: '6px' }}>Voice AI Studio</span>
-              <h4 style={{ fontSize: '0.96rem', fontWeight: 700, margin: '4px 0 2px 0' }}>Spoken English Simulation & Coaching</h4>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Talk directly with the AI speaking partner and improve your conversational flow.</p>
+              <span className="badge badge-warning" style={{ marginBottom: '6px' }}>Daily Idiom & Reflex</span>
+              <h4 style={{ fontSize: '0.96rem', fontWeight: 700, margin: '4px 0 2px 0' }}>Daily Idiom Workout & Sentence Construction</h4>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>5-minute daily challenges with idiom context, grammar puzzles, and sentence builders.</p>
             </div>
             <ChevronRight size={18} color="var(--text-muted)" style={{ flexShrink: 0, marginLeft: '12px' }} />
           </div>
         </div>
       </div>
 
-      {/* Recent Grammar Mistakes Log */}
+      {/* 7. Recent Grammar Mistakes Log */}
       {mistakes.length > 0 && (
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>

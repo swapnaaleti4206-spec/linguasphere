@@ -17,11 +17,10 @@ import {
 export default function Sidebar({ currentTab, onSelectTab, isAdmin }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, category: 'Overview' },
-    { id: 'chat', label: 'AI Tutor Chat', icon: MessageSquare, category: 'AI Learning' },
     { id: 'grammar', label: 'Grammar & Polish', icon: CheckCircle2, category: 'AI Learning' },
     { id: 'vocab', label: 'Vocabulary Builder', icon: BookOpen, category: 'AI Learning' },
     { id: 'telugu', label: 'Telugu Translation Quiz', icon: Languages, category: 'Interactive Quizzes' },
-    { id: 'daily', label: 'Daily 5-Min Practice', icon: CalendarCheck, category: 'Interactive Quizzes' },
+    { id: 'daily', label: 'Idiom of the Day & Practice', icon: CalendarCheck, category: 'Interactive Quizzes' },
     { id: 'speaking', label: 'AI Speaking Studio', icon: Mic, category: 'Practice Modes', isFreeBadge: true },
     { id: 'writing', label: 'Writing Assistants', icon: PenTool, category: 'Practice Modes' },
     { id: 'reading', label: 'Reading Exercises', icon: BookMarked, category: 'Practice Modes' },
