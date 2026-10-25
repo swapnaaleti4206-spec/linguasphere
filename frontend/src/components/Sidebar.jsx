@@ -22,7 +22,7 @@ export default function Sidebar({ currentTab, onSelectTab, isAdmin }) {
     { id: 'vocab', label: 'Vocabulary Builder', icon: BookOpen, category: 'AI Learning' },
     { id: 'telugu', label: 'Telugu Translation Quiz', icon: Languages, category: 'Interactive Quizzes' },
     { id: 'daily', label: 'Daily 5-Min Practice', icon: CalendarCheck, category: 'Interactive Quizzes' },
-    { id: 'speaking', label: 'Speaking Simulation', icon: Mic, category: 'Practice Modes' },
+    { id: 'speaking', label: 'AI Speaking Studio', icon: Mic, category: 'Practice Modes', isFreeBadge: true },
     { id: 'writing', label: 'Writing Assistants', icon: PenTool, category: 'Practice Modes' },
     { id: 'reading', label: 'Reading Exercises', icon: BookMarked, category: 'Practice Modes' },
     { id: 'evaluation', label: 'Writing Evaluation', icon: Award, category: 'Assessment' },
@@ -94,7 +94,22 @@ export default function Sidebar({ currentTab, onSelectTab, isAdmin }) {
                         <Icon size={18} color={isActive ? 'var(--primary)' : 'currentColor'} />
                         <span>{item.label}</span>
                       </div>
-                      {isActive && <ChevronRight size={14} color="var(--primary)" />}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {item.isFreeBadge && (
+                          <span style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            color: '#059669',
+                            textTransform: 'uppercase'
+                          }}>
+                            FREE
+                          </span>
+                        )}
+                        {isActive && <ChevronRight size={14} color="var(--primary)" />}
+                      </div>
                     </button>
                   );
                 })}

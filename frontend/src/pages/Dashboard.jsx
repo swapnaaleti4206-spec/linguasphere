@@ -8,7 +8,12 @@ import {
   Sparkles,
   ArrowRight,
   Languages,
-  ChevronRight
+  ChevronRight,
+  Mic,
+  Volume2,
+  Users,
+  Briefcase,
+  Play
 } from 'lucide-react';
 
 export default function Dashboard({ user, onNavigateTab, language = 'english' }) {
@@ -73,7 +78,7 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
             {streakDays > 0 ? (
               <>You have an active <strong style={{ color: '#fbbf24' }}>{streakDays}-day streak</strong>! Keep it going with today's practice.</>
             ) : (
-              <>Your streak is currently at <strong style={{ color: '#fbbf24' }}>0 days</strong>. Complete your first Telugu Translation Quiz or Daily Challenge below to unlock your 1-day streak!</>
+              <>Your streak is currently at <strong style={{ color: '#fbbf24' }}>0 days</strong>. Complete your first Telugu Translation Quiz or Speaking Challenge below to unlock your 1-day streak!</>
             )}
           </p>
         </div>
@@ -138,6 +143,158 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
           </div>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* NEW SECTION: 100% FREE AI ENGLISH SPEAKING PRACTICE STUDIO */}
+      {/* ========================================================================= */}
+      <section className="card" style={{
+        background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(79, 70, 229, 0.08))',
+        border: '1.5px solid rgba(59, 130, 246, 0.3)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '32px',
+        boxShadow: '0 8px 32px rgba(37, 99, 235, 0.08)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+          gap: '32px',
+          alignItems: 'center'
+        }}>
+          {/* Left Column: Story & Call to Action */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                color: '#059669',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase'
+              }}>
+                <Sparkles size={15} /> 100% Free • No Subscription Required
+              </span>
+              <span className="badge badge-primary" style={{ fontSize: '0.78rem', fontWeight: 700 }}>
+                Interactive Voice AI
+              </span>
+            </div>
+
+            <h3 style={{
+              fontSize: '1.75rem',
+              fontWeight: 800,
+              lineHeight: 1.25,
+              color: 'var(--text-primary)'
+            }}>
+              Practice Speaking English with AI <span style={{ color: 'var(--primary)' }}>Real-Time & Free</span>
+            </h3>
+
+            <p style={{
+              color: 'var(--text-secondary)',
+              fontSize: '0.96rem',
+              lineHeight: 1.6
+            }}>
+              Most language platforms lock speaking practice behind expensive paid paywalls. 
+              We believe conversational fluency should be accessible to everyone! 
+              Practice spoken English freely with your personal AI partner—speak into your microphone, 
+              hear natural audio replies, receive instant grammar and pronunciation tips, and conquer speaking hesitation.
+            </p>
+
+            {/* Feature Pills */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: '12px',
+              padding: '12px 0'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                <Mic size={18} color="var(--primary)" /> Real-Time Voice Input
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                <Volume2 size={18} color="var(--primary)" /> AI Audio Response
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                <CheckCircle size={18} color="#16a34a" /> Instant Fluency Feedback
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                <Briefcase size={18} color="var(--primary)" /> Job Interview Scenarios
+              </div>
+            </div>
+
+            {/* Action Button Below Info */}
+            <div style={{ paddingTop: '6px' }}>
+              <button
+                onClick={() => onNavigateTab('speaking')}
+                className="btn btn-primary"
+                style={{
+                  padding: '14px 28px',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  borderRadius: 'var(--radius-md)',
+                  boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}
+              >
+                <Mic size={20} />
+                <span>Start AI Speaking Practice</span>
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column: Image Describing AI and Human Practicing Speaking */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{
+              borderRadius: 'var(--radius-lg)',
+              overflow: 'hidden',
+              boxShadow: '0 12px 30px rgba(0, 0, 0, 0.15)',
+              border: '2px solid rgba(255, 255, 255, 0.2)',
+              position: 'relative',
+              backgroundColor: 'var(--bg-secondary)'
+            }}>
+              <img
+                src="/ai_human_speaking.jpg"
+                alt="AI and Human Practicing English Speaking"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  maxHeight: '340px',
+                  objectFit: 'cover',
+                  display: 'block'
+                }}
+              />
+              <div style={{
+                position: 'absolute',
+                bottom: '12px',
+                left: '12px',
+                right: '12px',
+                padding: '8px 14px',
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                backdropFilter: 'blur(8px)',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <span style={{ fontWeight: 600 }}>🎙️ Interactive Voice Practice</span>
+                <span style={{ opacity: 0.85 }}>Human Learner ↔ AI Speaking Partner</span>
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              Speak naturally, simulate conversations, and build effortless fluency without expensive subscription fees.
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Progress & Skills Grid */}
       <div className="grid-2">
@@ -224,13 +381,13 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
 
           <div
             className="card"
-            onClick={() => onNavigateTab('chat')}
+            onClick={() => onNavigateTab('speaking')}
             style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px' }}
           >
             <div>
-              <span className="badge badge-success" style={{ marginBottom: '6px' }}>AI Tutor</span>
-              <h4 style={{ fontSize: '0.96rem', fontWeight: 700, margin: '4px 0 2px 0' }}>Live AI Tutor Chat in {language.toUpperCase()}</h4>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Chat freely and get instant corrections and phrase improvements.</p>
+              <span className="badge badge-success" style={{ marginBottom: '6px' }}>Voice AI Studio</span>
+              <h4 style={{ fontSize: '0.96rem', fontWeight: 700, margin: '4px 0 2px 0' }}>Spoken English Simulation & Coaching</h4>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Talk directly with the AI speaking partner and improve your conversational flow.</p>
             </div>
             <ChevronRight size={18} color="var(--text-muted)" style={{ flexShrink: 0, marginLeft: '12px' }} />
           </div>
