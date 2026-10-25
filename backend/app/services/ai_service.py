@@ -1113,31 +1113,134 @@ class MultilingualAIService:
         return lang_bank
 
     # =========================================================================
-    # 5. Speaking Simulation
+    # 5. Speaking Simulation & Two-Person Conversational Coach (Coach Sarah)
     # =========================================================================
     async def simulate_speaking_turn(self, mode: str, topic: str, user_transcript: str, language: str = "english", turn_count: int = 1) -> dict:
         grammar = self.analyze_grammar(user_transcript, language=language)
+        word_count = len(user_transcript.strip().split())
+        raw_text = user_transcript.strip()
+        lower = raw_text.lower()
+        score = grammar["score"]
 
+        # If word count is low, adjust score and encourage longer turns
+        if word_count < 5:
+            score = max(55.0, score - 15.0)
+        elif word_count > 15:
+            score = min(100.0, score + 4.0)
+
+        # 1. Try external LLM if available for dynamic dialogue
+        sys_prompt = (
+            f"You are Coach Sarah, a supportive, lively, and expert language speaking coach having a real-time spoken "
+            f"conversation in {language.capitalize()} with a learner. The active topic/task is: '{topic}'. "
+            f"This is conversation turn #{turn_count}.\n"
+            f"Instructions:\n"
+            f"1. React directly and empathetically to what the learner just said, like two people talking naturally.\n"
+            f"2. Give 1 concise tip to polish their spoken expression or elevate a word.\n"
+            f"3. Provide 1 suggested natural native phrasing they can test and re-speak.\n"
+            f"4. Ask 1 compelling follow-up question or give the next speaking task to keep the dialogue flowing.\n"
+            f"Format as JSON: {{\"speaker\": \"Coach Sarah\", \"feedback\": \"...\", \"suggested_phrasing\": \"...\", \"next_prompt\": \"...\"}}"
+        )
+        external_res = self._call_external_llm(sys_prompt, f"Learner said: \"{raw_text}\"")
+        if external_res:
+            try:
+                # Try to parse JSON from LLM
+                m = re.search(r"\{.*\}", external_res, re.DOTALL)
+                if m:
+                    parsed = json.loads(m.group(0))
+                    return {
+                        "speaker": "Coach Sarah (AI Speaking Coach)",
+                        "feedback": parsed.get("feedback", "Excellent effort speaking clearly!"),
+                        "suggested_phrasing": parsed.get("suggested_phrasing", self._elevate_sentence(raw_text)),
+                        "next_prompt": parsed.get("next_prompt", "Could you elaborate more on that?"),
+                        "grammar_analysis": grammar,
+                        "score": round(score, 1),
+                        "language": language,
+                        "turn": turn_count
+                    }
+            except Exception:
+                pass
+
+        # 2. Comprehensive Local Conversational Engine for Coach Sarah
         if language == "german":
-            speaker = "Interviewer (Deutsch)"
-            feedback = "Gute Aussprache und klare Satzstruktur im Deutschen."
-            next_prompt = "Könnten Sie mir mehr über Ihre bisherigen Erfahrungen und Stärken erzählen?"
+            speaker = "Trainerin Sarah (Deutsch-Coach)"
+            if turn_count == 1:
+                feedback = "Sehr guter Einstieg! Dein deutscher Satzbau klingt schon recht flüssig."
+                next_prompt = "Das klingt spannend! Welche Herausforderung oder Erfahrung war dabei für dich am wichtigsten?"
+                suggested = f"Tatsächlich ist es so, dass {raw_text.lower()}"
+            elif turn_count == 2:
+                feedback = "Tolle Reflexion! Du hast das Verb an die richtige Position gesetzt."
+                next_prompt = "Und wie siehst du die Zukunft bei diesem Thema? Was möchtest du als Nächstes erreichen?"
+                suggested = "Aus meiner Sicht ist das ein ganz wesentlicher Punkt."
+            else:
+                feedback = "Ausgezeichnete Ausdauer im Gespräch! Du sprichst immer freier und selbstbewusster."
+                next_prompt = "Hervorragend gemeistert! Möchtest du dieses Szenario noch einmal testen oder ein neues Thema wählen?"
+                suggested = "Zusammenfassend kann ich sagen, dass diese Erfahrung sehr wertvoll war."
+
         elif language == "korean":
-            speaker = "면접관 (Interviewer)"
-            feedback = "자연스러운 존댓말 사용과 명확한 의사전달입니다."
-            next_prompt = "이 프로젝트에서 본인이 가장 주도적으로 해결한 문제는 무엇이었나요?"
-        else:
-            speaker = "Interviewer (Hiring Lead)"
-            feedback = "Clear, articulate tone. Structure key achievements with the STAR framework."
-            next_prompt = "Could you share a specific challenge you overcame recently and what outcome you achieved?"
+            speaker = "사라 코치 (Coach Sarah)"
+            if turn_count == 1:
+                feedback = "첫 번째 말하기 미션을 멋지게 시작하셨어요! 존댓말 표현이 자연스럽습니다."
+                next_prompt = "정말 흥미로운 이야기네요! 그 상황에서 가장 기억에 남는 순간은 언제였나요?"
+                suggested = f"사실 저는 {raw_text}라고 생각해요."
+            elif turn_count == 2:
+                feedback = "표현력이 점점 더 좋아지고 있어요! 문장 연결이 매끄럽습니다."
+                next_prompt = "앞으로 이와 관련해서 새롭게 도전해보고 싶은 목표가 있으신가요?"
+                suggested = "앞으로는 더 꾸준히 연습해서 실력을 키우고 싶습니다."
+            else:
+                feedback = "실제 대화처럼 막힘없이 끝까지 완주하셨습니다! 대단해요!"
+                next_prompt = "오늘 대화 연습 정말 훌륭했습니다! 한 번 더 발음을 테스트해 보시겠어요, 아니면 다음 미션으로 갈까요?"
+                suggested = "오늘 저와 함께 이야기 나눠주셔서 감사합니다."
+
+        else: # English
+            speaker = "Coach Sarah (AI Speaking Mentor)"
+            
+            # Context-sensitive feedback based on what user mentioned
+            snippet = raw_text[:40] + "..." if len(raw_text) > 40 else raw_text
+
+            if any(k in lower for k in ["hello", "hi", "my name", "i am", "introduce"]):
+                feedback = f"Wonderful self-introduction, Swapna! You established a warm, confident presence right away."
+                suggested = f"\"Hi Sarah! I'm thrilled to be here. To introduce myself briefly, {raw_text.lower()}\""
+                next_prompt = "Now for your next speaking task: What is one professional accomplishment or project you're most proud of? Speak for about 20-30 seconds!"
+
+            elif any(k in lower for k in ["problem", "challenge", "difficult", "hard", "obstacle", "solved"]):
+                feedback = "Great problem-solving mindset! Using action verbs gives your delivery genuine authority and structure."
+                suggested = f"\"When faced with this obstacle, my strategy was to prioritize key solutions: {raw_text}\""
+                next_prompt = "That shows real resilience! Building on that: How did your team or colleagues respond, and what was the final outcome?"
+
+            elif any(k in lower for k in ["think", "believe", "agree", "disagree", "opinion", "remote"]):
+                feedback = "Strong articulation of your perspective! The logic flowed smoothly without awkward pauses."
+                suggested = f"\"From my vantage point, the data clearly supports this approach: {self._elevate_sentence(raw_text)}\""
+                next_prompt = "Convincing argument! If someone had the opposite viewpoint, how would you politely persuade them to see your side?"
+
+            elif turn_count == 1:
+                feedback = f"Great start to our conversation! You answered clearly regarding: \"{snippet}\"."
+                suggested = f"\"To share my perspective on this topic: {self._elevate_sentence(raw_text)}\""
+                next_prompt = "Let's dive a bit deeper: What specific details or experiences led you to this conclusion? Tell me more!"
+
+            elif turn_count == 2:
+                feedback = "You're getting into a very natural conversational rhythm now! Notice how your confidence is expanding."
+                suggested = f"\"Furthermore, an essential aspect to consider is: {self._elevate_sentence(raw_text)}\""
+                next_prompt = "Brilliant point! Now imagine we're presenting this idea to an executive or client. What would be your key takeaway message?"
+
+            elif turn_count >= 3:
+                feedback = "Fantastic back-and-forth dialogue! You maintained eye contact (in spirit), enunciated clearly, and kept the conversation lively."
+                suggested = f"\"In summary, my main conclusion is that {self._elevate_sentence(raw_text)}\""
+                next_prompt = "You completed all speaking rounds for this scenario with high marks! Feel free to re-speak any turn to improve your score, or choose a new speaking task above."
+
+            else:
+                feedback = "Solid vocal clarity and pacing. Keep projecting your voice forward with confidence."
+                suggested = self._elevate_sentence(raw_text)
+                next_prompt = "Could you give a concrete real-life example to illustrate what you just shared?"
 
         return {
             "speaker": speaker,
             "feedback": feedback,
+            "suggested_phrasing": suggested,
             "next_prompt": next_prompt,
             "grammar_analysis": grammar,
-            "score": grammar["score"],
-            "language": language
+            "score": round(score, 1),
+            "language": language,
+            "turn": turn_count
         }
 
     # =========================================================================
