@@ -202,9 +202,20 @@ async def save_vocabulary_word(req: SaveVocabRequest, current_user: dict = Depen
     return {"status": "success", "message": f"Saved '{req.word}' to your personal vocabulary bank!"}
 
 @router.get("/daily-practice")
-async def get_daily(language: str = "english", level: str = "intermediate"):
-    challenge = ai_tutor.get_daily_practice(language=language, level=level)
-    return challenge
+async def get_daily(language: str = "english", level: str = "intermediate", day_offset: int = 0):
+    return ai_tutor.get_daily_practice(language=language, level=level, day_offset=day_offset)
+
+@router.get("/word-of-the-day")
+async def get_word_day(language: str = "english", day_offset: int = 0):
+    return ai_tutor.get_word_of_the_day(language=language, day_offset=day_offset)
+
+@router.get("/random-idiom")
+async def get_rand_idiom(language: str = "english"):
+    return ai_tutor.get_random_idiom(language=language)
+
+@router.get("/random-word")
+async def get_rand_word(language: str = "english"):
+    return ai_tutor.get_random_word(language=language)
 
 @router.get("/pronunciation")
 async def get_pronunciation(word: str = "comfortable", language: str = "english"):

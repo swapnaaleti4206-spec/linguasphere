@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { speakText } from '../utils/speech';
+import { getDailyIdiomAndWord } from '../utils/dailyCurriculum';
 import {
   Flame,
   CheckCircle,
@@ -10,10 +11,15 @@ import {
   ArrowRight,
   Languages,
   ChevronRight,
+  ChevronLeft,
   Mic,
   Volume2,
   CalendarCheck,
-  Quote
+  Quote,
+  Shuffle,
+  BookmarkPlus,
+  Calendar,
+  Check
 } from 'lucide-react';
 
 export default function Dashboard({ user, onNavigateTab, language = 'english' }) {
@@ -22,30 +28,16 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
   const [dailyData, setDailyData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const defaultIdioms = {
-    english: {
-      phrase: "Hit the nail on the head",
-      meaning: "To describe exactly what is causing a situation or problem.",
-      telugu_meaning: "సరిగ్గా చెప్పడం / వాస్తవాన్ని కచ్చితంగా వ్యక్తపరచడం",
-      example: "Swapna hit the nail on the head when presenting the project roadmap."
-    },
-    german: {
-      phrase: "Daumen drücken",
-      meaning: "To cross one's fingers; wish someone good luck.",
-      telugu_meaning: "మంచి జరగాలని కోరుకోవడం (ఆల్ ది బెస్ట్ చెప్పడం)",
-      example: "Ich drücke dir für deine morgige Präsentation ganz fest die Daumen!"
-    },
-    korean: {
-      phrase: "발이 넓다 (Bal-i neolp-da)",
-      meaning: "To have a wide circle of acquaintances; well-connected.",
-      telugu_meaning: "చాలా మంది పరిచయస్థులు మరియు మంచి సంబంధాలు కలిగి ఉండడం",
-      example: "그분은 발이 넓어서 아는 사람이 아주 많아요."
-    }
-  };
+  // Dynamic daily rotation & shuffle state
+  const [dayOffset, setDayOffset] = useState(0);
+  const [idiomOffset, setIdiomOffset] = useState(0);
+  const [wordOffset, setWordOffset] = useState(0);
+  const [savingWord, setSavingWord] = useState(false);
+  const [savedWordSuccess, setSavedWordSuccess] = useState(false);
 
   useEffect(() => {
     loadData();
-  }, [language]);
+  }, [language, dayOffset]);
 
   async function loadData() {
     try {
@@ -53,7 +45,7 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
       const [statsData, mistakesData, dailyPracticeData] = await Promise.all([
         api.getDashboardStats().catch(() => null),
         api.getGrammarMistakes(5).catch(() => []),
-        api.getDailyPractice(language, user?.level || 'intermediate').catch(() => null)
+        api.getDailyPractice(language, user?.level || 'intermediate', dayOffset).catch(() => null)
       ]);
       setStats(statsData);
       setMistakes(mistakesData || []);
@@ -64,6 +56,42 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
       setLoading(false);
     }
   }
+
+  async function handleSaveWord(wordObj) {
+    if (!wordObj) return;
+    try {
+      setSavingWord(true);
+      await api.saveWord({
+        language,
+        word: wordObj.word,
+        phonetic: wordObj.phonetic || '',
+        part_of_speech: wordObj.part_of_speech || 'word',
+        definition: wordObj.definition || '',
+        example: wordObj.example || '',
+        difficulty: wordObj.difficulty || 'intermediate'
+      });
+      setSavedWordSuccess(true);
+      setTimeout(() => setSavedWordSuccess(false), 2500);
+    } catch (err) {
+      console.error('Failed to save word:', err);
+    } finally {
+      setSavingWord(false);
+    }
+  }
+
+  const localDaily = getDailyIdiomAndWord(language, dayOffset);
+  const localIdiomAlt = getDailyIdiomAndWord(language, dayOffset + idiomOffset);
+  const localWordAlt = getDailyIdiomAndWord(language, dayOffset + wordOffset);
+
+  const currentIdiom = (dailyData?.idiom?.phrase && idiomOffset === 0)
+    ? dailyData.idiom
+    : localIdiomAlt.idiom;
+
+  const currentWord = (dailyData?.word_of_the_day?.word && wordOffset === 0)
+    ? dailyData.word_of_the_day
+    : localWordAlt.word;
+
+  const displayDateStr = dailyData?.date_str || localDaily.dateStr;
 
   if (loading) {
     return (
@@ -77,10 +105,6 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
   const lessonsCount = stats?.lessons_completed || 0;
   const wordsCount = stats?.words_learned || 0;
   const mistakesCount = stats?.grammar_mistakes_logged || 0;
-
-  const currentIdiom = dailyData?.idiom?.phrase
-    ? dailyData.idiom
-    : (defaultIdioms[language] || defaultIdioms.english);
 
   return (
     <div className="page-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -176,121 +200,400 @@ export default function Dashboard({ user, onNavigateTab, language = 'english' })
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. FEATURED IDIOM OF THE DAY CARD (నేటి జాతీయం / సామెత) */}
+      {/* 3. DYNAMIC DAILY DISCOVERY HUB: IDIOM OF THE DAY & WORD OF THE DAY */}
       {/* ========================================================================= */}
-      <section className="card" style={{
-        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.05))',
-        border: '1.5px solid rgba(245, 158, 11, 0.35)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '24px 28px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '14px',
-        boxShadow: '0 4px 20px rgba(245, 158, 11, 0.08)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Top Control Bar with Calendar Date & Day Navigation */}
+        <div className="card" style={{
+          padding: '16px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+          background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.05), rgba(59, 130, 246, 0.08))',
+          border: '1px solid rgba(59, 130, 246, 0.25)',
+          borderRadius: 'var(--radius-lg)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '4px 12px',
+              padding: '6px 14px',
               borderRadius: '20px',
-              backgroundColor: 'rgba(245, 158, 11, 0.18)',
-              color: '#d97706',
+              backgroundColor: '#1e3a8a',
+              color: '#ffffff',
               fontSize: '0.8rem',
               fontWeight: 800,
+              letterSpacing: '0.04em',
               textTransform: 'uppercase'
             }}>
-              🌟 Idiom of the Day ({language.toUpperCase()})
+              <Calendar size={15} /> Daily Hub ({language.toUpperCase()})
             </span>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              • నేటి జాతీయం / సామెత
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                {displayDateStr}
+              </span>
+              {dayOffset === 0 ? (
+                <span className="badge badge-success" style={{ fontSize: '0.72rem', fontWeight: 800 }}>
+                  Today's Edition 🌟
+                </span>
+              ) : (
+                <span className="badge badge-warning" style={{ fontSize: '0.72rem', fontWeight: 700 }}>
+                  {dayOffset > 0 ? `+${dayOffset} Days Ahead` : `${Math.abs(dayOffset)} Days Ago`}
+                </span>
+              )}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          {/* Interactive Date Navigation Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
-              onClick={() => speakText(currentIdiom.phrase, { language })}
-              className="btn btn-secondary btn-sm"
-              style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              title="Pronounce idiom aloud"
-            >
-              <Volume2 size={16} color="#d97706" />
-              <span>Listen Pronunciation</span>
-            </button>
-
-            <button
-              onClick={() => onNavigateTab('daily')}
-              className="btn btn-sm"
-              style={{
-                backgroundColor: '#d97706',
-                color: '#ffffff',
-                fontWeight: 700,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px'
+              onClick={() => {
+                setDayOffset(prev => prev - 1);
+                setIdiomOffset(0);
+                setWordOffset(0);
               }}
+              className="btn btn-secondary btn-sm"
+              style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              title="View previous day's edition"
             >
-              <span>Daily Practice & Puzzles</span>
-              <ArrowRight size={14} />
+              <ChevronLeft size={16} />
+              <span>Prev Day</span>
+            </button>
+
+            {dayOffset !== 0 && (
+              <button
+                onClick={() => {
+                  setDayOffset(0);
+                  setIdiomOffset(0);
+                  setWordOffset(0);
+                }}
+                className="btn btn-sm"
+                style={{
+                  backgroundColor: '#1e3a8a',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <span>Today 📅</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                setDayOffset(prev => prev + 1);
+                setIdiomOffset(0);
+                setWordOffset(0);
+              }}
+              className="btn btn-secondary btn-sm"
+              style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              title="View next day's edition"
+            >
+              <span>Next Day</span>
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
 
-        {/* Idiom Display */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
-          <Quote size={24} color="#d97706" style={{ transform: 'rotate(180deg)', flexShrink: 0 }} />
-          <h3 style={{
-            fontSize: '1.5rem',
-            fontWeight: 800,
-            color: 'var(--text-primary)',
-            letterSpacing: '-0.01em'
-          }}>
-            "{currentIdiom.phrase}"
-          </h3>
-        </div>
-
-        {/* Meaning & Telugu Translation */}
+        {/* 2-Column Responsive Grid: Idiom on Left, Word of the Day on Right */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '14px',
-          padding: '12px 16px',
-          backgroundColor: 'var(--bg-surface)',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-light)'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+          gap: '20px'
         }}>
-          <div>
-            <strong style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Meaning in English:
-            </strong>
-            <div style={{ fontSize: '0.94rem', color: 'var(--text-primary)', fontWeight: 600, marginTop: '2px' }}>
-              {currentIdiom.meaning}
+          {/* ========================================================================= */}
+          {/* CARD 1: IDIOM OF THE DAY (నేటి జాతీయం / సామెత) */}
+          {/* ========================================================================= */}
+          <div className="card" style={{
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.04))',
+            border: '1.5px solid rgba(245, 158, 11, 0.35)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            boxShadow: '0 4px 20px rgba(245, 158, 11, 0.07)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '3px 10px',
+                  borderRadius: '16px',
+                  backgroundColor: 'rgba(245, 158, 11, 0.18)',
+                  color: '#d97706',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  textTransform: 'uppercase'
+                }}>
+                  🌟 Idiom of the Day
+                </span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                  • నేటి జాతీయం
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  onClick={() => setIdiomOffset(prev => prev + 1)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '0.78rem' }}
+                  title="Shuffle to another curated idiom"
+                >
+                  <Shuffle size={14} color="#d97706" />
+                  <span>Next Idiom 🔀</span>
+                </button>
+
+                <button
+                  onClick={() => speakText(currentIdiom.phrase, { language })}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '0.78rem' }}
+                  title="Pronounce idiom aloud"
+                >
+                  <Volume2 size={14} color="#d97706" />
+                  <span>Listen</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Idiom Phrase */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+              <Quote size={22} color="#d97706" style={{ transform: 'rotate(180deg)', flexShrink: 0 }} />
+              <h3 style={{
+                fontSize: '1.4rem',
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                lineHeight: 1.3
+              }}>
+                "{currentIdiom.phrase}"
+              </h3>
+            </div>
+
+            {/* Meaning & Telugu Nuance */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              padding: '12px 14px',
+              backgroundColor: 'var(--bg-surface)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-light)'
+            }}>
+              <div>
+                <strong style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  English Meaning:
+                </strong>
+                <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontWeight: 600, marginTop: '2px' }}>
+                  {currentIdiom.meaning}
+                </div>
+              </div>
+
+              {currentIdiom.telugu_meaning && (
+                <div>
+                  <strong style={{ fontSize: '0.78rem', color: '#d97706', textTransform: 'uppercase' }}>
+                    తెలుగు అర్థం (Telugu Nuance):
+                  </strong>
+                  <div style={{ fontSize: '0.92rem', color: '#b45309', fontWeight: 700, marginTop: '2px' }}>
+                    {currentIdiom.telugu_meaning}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* In Context Example */}
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'rgba(245, 158, 11, 0.08)',
+              fontSize: '0.86rem',
+              color: 'var(--text-secondary)'
+            }}>
+              <strong style={{ color: 'var(--text-primary)' }}>In Context:</strong> "{currentIdiom.example}"
             </div>
           </div>
 
-          {currentIdiom.telugu_meaning && (
-            <div>
-              <strong style={{ fontSize: '0.82rem', color: 'var(--primary)', textTransform: 'uppercase' }}>
-                తెలుగు అర్థం (Telugu Nuance):
-              </strong>
-              <div style={{ fontSize: '0.94rem', color: 'var(--primary-text)', fontWeight: 700, marginTop: '2px' }}>
-                {currentIdiom.telugu_meaning}
+          {/* ========================================================================= */}
+          {/* CARD 2: WORD OF THE DAY (నేటి పదం & ఉచ్చారణ) */}
+          {/* ========================================================================= */}
+          <div className="card" style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.04))',
+            border: '1.5px solid rgba(16, 185, 129, 0.35)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            boxShadow: '0 4px 20px rgba(16, 185, 129, 0.07)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '3px 10px',
+                  borderRadius: '16px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.18)',
+                  color: '#059669',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  textTransform: 'uppercase'
+                }}>
+                  📖 Word of the Day • {currentWord.part_of_speech || 'Vocabulary'}
+                </span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                  • నేటి పదం
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  onClick={() => setWordOffset(prev => prev + 1)}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '0.78rem' }}
+                  title="Shuffle to another curated vocabulary word"
+                >
+                  <Shuffle size={14} color="#059669" />
+                  <span>Next Word 🔀</span>
+                </button>
+
+                <button
+                  onClick={() => speakText(currentWord.word, { language })}
+                  className="btn btn-secondary btn-sm"
+                  style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '0.78rem' }}
+                  title="Pronounce word aloud"
+                >
+                  <Volume2 size={14} color="#059669" />
+                  <span>Listen</span>
+                </button>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Practical Example */}
-        <div style={{
-          padding: '10px 14px',
-          borderRadius: 'var(--radius-md)',
-          backgroundColor: 'rgba(245, 158, 11, 0.08)',
-          fontSize: '0.88rem',
-          color: 'var(--text-secondary)'
-        }}>
-          <strong style={{ color: 'var(--text-primary)' }}>In Context:</strong> "{currentIdiom.example}"
+            {/* Word Display & Phonetic */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
+                <h3 style={{
+                  fontSize: '1.6rem',
+                  fontWeight: 800,
+                  color: 'var(--text-primary)',
+                  letterSpacing: '-0.01em'
+                }}>
+                  {currentWord.word}
+                </h3>
+                {currentWord.phonetic && (
+                  <span style={{
+                    fontSize: '0.9rem',
+                    color: '#059669',
+                    fontFamily: 'monospace',
+                    fontWeight: 700,
+                    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                    padding: '2px 8px',
+                    borderRadius: '8px'
+                  }}>
+                    {currentWord.phonetic}
+                  </span>
+                )}
+                {currentWord.syllables && (
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    Syllables: <strong>{currentWord.syllables}</strong>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Meaning & Telugu Nuance */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              padding: '12px 14px',
+              backgroundColor: 'var(--bg-surface)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-light)'
+            }}>
+              <div>
+                <strong style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  English Definition:
+                </strong>
+                <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontWeight: 600, marginTop: '2px' }}>
+                  {currentWord.definition}
+                </div>
+              </div>
+
+              {currentWord.telugu_meaning && (
+                <div>
+                  <strong style={{ fontSize: '0.78rem', color: '#059669', textTransform: 'uppercase' }}>
+                    తెలుగు అర్థం (Telugu Nuance):
+                  </strong>
+                  <div style={{ fontSize: '0.92rem', color: '#047857', fontWeight: 700, marginTop: '2px' }}>
+                    {currentWord.telugu_meaning}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* In Context Example */}
+            <div style={{
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              fontSize: '0.86rem',
+              color: 'var(--text-secondary)'
+            }}>
+              <strong style={{ color: 'var(--text-primary)' }}>In Context:</strong> "{currentWord.example}"
+            </div>
+
+            {/* Save to Vocabulary Bank Action */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '4px' }}>
+              <button
+                onClick={() => handleSaveWord(currentWord)}
+                disabled={savingWord || savedWordSuccess}
+                className="btn btn-secondary btn-sm"
+                style={{
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: savedWordSuccess ? '#059669' : 'inherit'
+                }}
+              >
+                {savedWordSuccess ? (
+                  <>
+                    <Check size={16} color="#059669" />
+                    <span style={{ color: '#059669' }}>Saved to Bank!</span>
+                  </>
+                ) : (
+                  <>
+                    <BookmarkPlus size={16} color="#059669" />
+                    <span>{savingWord ? 'Saving...' : 'Save to My Bank'}</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => onNavigateTab('daily')}
+                className="btn btn-sm"
+                style={{
+                  backgroundColor: '#059669',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>Daily Challenges</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

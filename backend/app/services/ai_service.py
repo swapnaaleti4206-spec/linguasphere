@@ -3,7 +3,15 @@ import re
 import json
 import random
 import requests
+from datetime import datetime, timezone, timedelta
 from app.core.config import OPENAI_API_KEY, GROQ_API_KEY, GEMINI_API_KEY
+from app.services.daily_data import (
+    DAILY_IDIOMS,
+    DAILY_WORDS,
+    DAILY_PUZZLES,
+    DAILY_SCENARIOS,
+    DAILY_BUILDERS,
+)
 
 class MultilingualAIService:
     """
@@ -1009,107 +1017,10 @@ class MultilingualAIService:
     # 4. Multilingual Vocabulary Bank
     # =========================================================================
     def get_vocabulary_words(self, language: str = "english", level: str = "all") -> list[dict]:
-        banks = {
-            "english": [
-                {
-                    "word": "Articulate",
-                    "phonetic": "/ɑːrˈtɪk.jə.lət/",
-                    "syllables": "ar-TIC-u-late",
-                    "part_of_speech": "adjective",
-                    "difficulty": "advanced",
-                    "definition": "Having or showing the ability to speak fluently and coherently.",
-                    "example": "Swapna delivered an articulate summary of the project.",
-                    "collocations": ["articulate speaker", "articulate clearly"]
-                },
-                {
-                    "word": "Resilience",
-                    "phonetic": "/rɪˈzɪl.jəns/",
-                    "syllables": "re-SIL-ience",
-                    "part_of_speech": "noun",
-                    "difficulty": "intermediate",
-                    "definition": "The capacity to recover quickly from difficulties.",
-                    "example": "Her resilience helped the team overcome obstacles.",
-                    "collocations": ["demonstrate resilience", "remarkable resilience"]
-                },
-                {
-                    "word": "Diligent",
-                    "phonetic": "/ˈdɪl.ə.dʒənt/",
-                    "syllables": "DIL-i-gent",
-                    "part_of_speech": "adjective",
-                    "difficulty": "beginner",
-                    "definition": "Having or showing care and conscientiousness in work.",
-                    "example": "Through diligent practice, you will master the language.",
-                    "collocations": ["diligent student", "diligent effort"]
-                }
-            ],
-            "german": [
-                {
-                    "word": "Die Zuverlässigkeit",
-                    "phonetic": "/ˈt͡suːfɛɐ̯ˌlɛsɪçkaɪ̯t/",
-                    "syllables": "Zu-ver-läs-sig-keit",
-                    "part_of_speech": "noun (feminine)",
-                    "difficulty": "intermediate",
-                    "definition": "Reliability, dependability, trustworthiness.",
-                    "example": "Ihre Zuverlässigkeit wird im Team sehr geschätzt.",
-                    "collocations": ["hohe Zuverlässigkeit", "Zuverlässigkeit beweisen"]
-                },
-                {
-                    "word": "Das Fingerspitzengefühl",
-                    "phonetic": "/ˈfɪŋɐʃpɪt͡sn̩ɡəˌfyːl/",
-                    "syllables": "Fin-ger-spit-zen-ge-fühl",
-                    "part_of_speech": "noun (neuter)",
-                    "difficulty": "advanced",
-                    "definition": "Intuitive flair, tact, and delicate sensitivity.",
-                    "example": "Für diese Verhandlung braucht man diplomatisches Fingerspitzengefühl.",
-                    "collocations": ["diplomatisches Fingerspitzengefühl"]
-                },
-                {
-                    "word": "Die Gemütlichkeit",
-                    "phonetic": "/ɡəˈmyːtlɪçkaɪ̯t/",
-                    "syllables": "Ge-müt-lich-keit",
-                    "part_of_speech": "noun (feminine)",
-                    "difficulty": "beginner",
-                    "definition": "A state of warmth, friendliness, and coziness.",
-                    "example": "Die Gemütlichkeit im Kaffeehaus war wunderbar.",
-                    "collocations": ["warme Gemütlichkeit", "Gemütlichkeit ausstrahlen"]
-                }
-            ],
-            "korean": [
-                {
-                    "word": "눈치 (Nunchi)",
-                    "phonetic": "/nunt͡ɕʰi/",
-                    "syllables": "Nun-chi",
-                    "part_of_speech": "noun",
-                    "difficulty": "intermediate",
-                    "definition": "The subtle art and ability to gauge others' moods and context.",
-                    "example": "그녀는 눈치가 빨라서 상황을 즉시 파악해요.",
-                    "collocations": ["눈치가 빠르다", "눈치를 보다"]
-                },
-                {
-                    "word": "인연 (In-yeon)",
-                    "phonetic": "/in.jʌn/",
-                    "syllables": "In-yeon",
-                    "part_of_speech": "noun",
-                    "difficulty": "advanced",
-                    "definition": "Karmic tie, fateful destiny connecting people through time.",
-                    "example": "우리가 만난 것도 깊은 인연입니다.",
-                    "collocations": ["소중한 인연", "인연을 맺다"]
-                },
-                {
-                    "word": "정 (Jeong)",
-                    "phonetic": "/t͡ɕʌŋ/",
-                    "syllables": "Jeong",
-                    "part_of_speech": "noun",
-                    "difficulty": "beginner",
-                    "definition": "Deep, warm emotional bond and affection developed over time.",
-                    "example": "오래 알고 지낸 이웃과 깊은 정이 들었어요.",
-                    "collocations": ["정이 많다", "정이 들다"]
-                }
-            ]
-        }
-        lang_bank = banks.get(language.lower(), banks["english"])
+        lang = language.lower() if language else "english"
+        lang_bank = DAILY_WORDS.get(lang, DAILY_WORDS["english"])
         if level != "all":
-            return [w for w in lang_bank if w["difficulty"] == level]
+            return [w for w in lang_bank if w.get("difficulty", "").lower() == level.lower()]
         return lang_bank
 
     # =========================================================================
@@ -1316,98 +1227,74 @@ class MultilingualAIService:
             }
 
     # =========================================================================
-    # 8. Daily Practice Challenges
+    # 8. Daily Practice Challenges & Word of the Day (Dynamic Calendar-Driven)
     # =========================================================================
-    def get_daily_practice(self, language: str = "english", level: str = "intermediate") -> dict:
-        challenges = {
-            "english": {
-                "day_title": "Daily English Workout & Reflex Builder",
-                "idiom": {
-                    "phrase": "Hit the nail on the head",
-                    "meaning": "To describe exactly what is causing a situation or problem.",
-                    "example": "Swapna hit the nail on the head when presenting the project roadmap.",
-                    "telugu_meaning": "సరిగ్గా చెప్పడం / వాస్తవాన్ని కచ్చితంగా వ్యక్తపరచడం"
-                },
-                "grammar_puzzle": {
-                    "question": "Which sentence is grammatically correct?",
-                    "options": [
-                        "She don't know the answer to this question.",
-                        "She doesn't know the answer to this question.",
-                        "She didn't knew the answer to this question.",
-                        "She not knows the answer to this question."
-                    ],
-                    "correct_index": 1,
-                    "explanation": "Third-person singular subject 'she' requires 'does not' / 'doesn't' followed by base verb 'know'."
-                },
-                "dialogue_scenario": {
-                    "context": "Professional Workplace Collaboration",
-                    "prompt": "How would you politely ask a colleague for their feedback on your new proposal?",
-                    "suggested_opening": "Could you please take a look at my proposal and share your candid feedback whenever you have a moment?"
-                },
-                "sentence_builder": {
-                    "words": ["Consistency", "and", "dedication", "lead", "to", "remarkable", "growth"],
-                    "correct_order": "Consistency and dedication lead to remarkable growth."
-                }
-            },
-            "german": {
-                "day_title": "Tägliche Deutsch-Übung",
-                "idiom": {
-                    "phrase": "Daumen drücken",
-                    "meaning": "To cross one's fingers; wish someone good luck.",
-                    "example": "Ich drücke dir für deine morgige Präsentation ganz fest die Daumen!",
-                    "telugu_meaning": "మంచి జరగాలని కోరుకోవడం (ఆల్ ది బెస్ట్ చెప్పడం)"
-                },
-                "grammar_puzzle": {
-                    "question": "Welcher Satz ist grammatikalisch korrekt?",
-                    "options": [
-                        "Ich habe gestern ein Buch gelesen.",
-                        "Ich habe gestern gelesen ein Buch.",
-                        "Ich gestern ein Buch habe gelesen.",
-                        "Ich gelesen habe gestern ein Buch."
-                    ],
-                    "correct_index": 0,
-                    "explanation": "Im deutschen Perfekt steht das Hilfsverb an Position 2 und das Partizip II ('gelesen') am Satzende."
-                },
-                "dialogue_scenario": {
-                    "context": "Im Café bestellen",
-                    "prompt": "Wie bestellst du höflich einen Cappuccino mit Hafermilch?",
-                    "suggested_opening": "Ich hätte gerne einen Cappuccino mit Hafermilch, bitte."
-                },
-                "sentence_builder": {
-                    "words": ["Übung", "macht", "den", "Meister", "im", "Leben"],
-                    "correct_order": "Übung macht den Meister im Leben."
-                }
-            },
-            "korean": {
-                "day_title": "오늘의 한국어 데일리 챌린지",
-                "idiom": {
-                    "phrase": "발이 넓다 (Bal-i neolp-da)",
-                    "meaning": "To have a wide circle of acquaintances; well-connected.",
-                    "example": "그분은 발이 넓어서 아는 사람이 아주 많아요.",
-                    "telugu_meaning": "చాలా మంది పరిచయస్థులు మరియు మంచి సంబంధాలు కలిగి ఉండడం"
-                },
-                "grammar_puzzle": {
-                    "question": "다음 중 올바른 존댓말 문장은 무엇인가요?",
-                    "options": [
-                        "저는 학생이야.",
-                        "저는 학생입니다.",
-                        "나는 학생이에요.",
-                        "나는 학생입니다."
-                    ],
-                    "correct_index": 1,
-                    "explanation": "겸칭 '저'와 격식체 종결어미 '입니다'가 조화롭게 결합된 '저는 학생입니다'가 가장 올바릅니다."
-                },
-                "dialogue_scenario": {
-                    "context": "카페에서 주문하기",
-                    "prompt": "아이스 아메리카노 한 잔을 정중하게 주문해 보세요.",
-                    "suggested_opening": "아이스 아메리카노 한 잔 부탁드립니다."
-                },
-                "sentence_builder": {
-                    "words": ["꾸준한", "노력은", "반드시", "좋은", "결실을", "맺습니다"],
-                    "correct_order": "꾸준한 노력은 반드시 좋은 결실을 맺습니다."
-                }
-            }
+    def get_daily_practice(self, language: str = "english", level: str = "intermediate", day_offset: int = 0) -> dict:
+        lang = language.lower() if language else "english"
+        if lang not in DAILY_IDIOMS:
+            lang = "english"
+
+        now = datetime.now(timezone.utc)
+        target_date = now + timedelta(days=day_offset)
+        day_of_year = target_date.timetuple().tm_yday
+        date_str = target_date.strftime("%B %d, %Y")
+
+        idioms_list = DAILY_IDIOMS.get(lang, DAILY_IDIOMS["english"])
+        words_list = DAILY_WORDS.get(lang, DAILY_WORDS["english"])
+        puzzles_list = DAILY_PUZZLES.get(lang, DAILY_PUZZLES["english"])
+        scenarios_list = DAILY_SCENARIOS.get(lang, DAILY_SCENARIOS["english"])
+        builders_list = DAILY_BUILDERS.get(lang, DAILY_BUILDERS["english"])
+
+        # Rotate deterministically based on day_of_year + day_offset so every day is unique
+        idiom = idioms_list[(day_of_year + day_offset * 3) % len(idioms_list)]
+        word = words_list[(day_of_year + day_offset * 5) % len(words_list)]
+        puzzle = puzzles_list[(day_of_year + day_offset) % len(puzzles_list)]
+        scenario = scenarios_list[(day_of_year + day_offset) % len(scenarios_list)]
+        builder = builders_list[(day_of_year + day_offset) % len(builders_list)]
+
+        titles = {
+            "english": "Daily English Workout & Reflex Builder",
+            "german": "Tägliche Deutsch-Übung",
+            "korean": "오늘의 한국어 데일리 챌린지"
         }
-        return challenges.get(language.lower(), challenges["english"])
+
+        return {
+            "date_str": date_str,
+            "day_of_year": day_of_year,
+            "day_offset": day_offset,
+            "day_title": titles.get(lang, titles["english"]),
+            "idiom": idiom,
+            "word_of_the_day": word,
+            "grammar_puzzle": puzzle,
+            "dialogue_scenario": scenario,
+            "sentence_builder": builder
+        }
+
+    def get_word_of_the_day(self, language: str = "english", day_offset: int = 0) -> dict:
+        lang = language.lower() if language else "english"
+        if lang not in DAILY_WORDS:
+            lang = "english"
+
+        now = datetime.now(timezone.utc)
+        target_date = now + timedelta(days=day_offset)
+        day_of_year = target_date.timetuple().tm_yday
+        words_list = DAILY_WORDS.get(lang, DAILY_WORDS["english"])
+        word = words_list[(day_of_year + day_offset * 5) % len(words_list)]
+
+        return {
+            "date_str": target_date.strftime("%B %d, %Y"),
+            "day_offset": day_offset,
+            **word
+        }
+
+    def get_random_idiom(self, language: str = "english") -> dict:
+        lang = language.lower() if language else "english"
+        idioms_list = DAILY_IDIOMS.get(lang, DAILY_IDIOMS["english"])
+        return random.choice(idioms_list)
+
+    def get_random_word(self, language: str = "english") -> dict:
+        lang = language.lower() if language else "english"
+        words_list = DAILY_WORDS.get(lang, DAILY_WORDS["english"])
+        return random.choice(words_list)
 
 ai_tutor = MultilingualAIService()

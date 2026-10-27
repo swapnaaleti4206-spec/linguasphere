@@ -142,7 +142,12 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(wordData),
   }),
-  getDailyPractice: (language = 'english', level = 'intermediate') => request(`/learning/daily-practice?language=${language}&level=${level}`),
+  getDailyPractice: (language = 'english', level = 'intermediate', dayOffset = 0) =>
+    request(`/learning/daily-practice?language=${language}&level=${level}&day_offset=${dayOffset}`),
+  getWordOfTheDay: (language = 'english', dayOffset = 0) =>
+    request(`/learning/word-of-the-day?language=${language}&day_offset=${dayOffset}`),
+  getRandomIdiom: (language = 'english') => request(`/learning/random-idiom?language=${language}`),
+  getRandomWord: (language = 'english') => request(`/learning/random-word?language=${language}`),
   getPronunciation: (word, language = 'english') => request(`/learning/pronunciation?word=${encodeURIComponent(word)}&language=${language}`),
   simulateSpeaking: (mode, topic, userTranscript, language = 'english', turnCount = 1) =>
     request('/learning/speaking-simulation', {

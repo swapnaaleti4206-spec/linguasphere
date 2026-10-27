@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { speakText } from '../utils/speech';
+import { getDailyIdiomAndWord } from '../utils/dailyCurriculum';
 import {
   CalendarCheck,
   CheckCircle,
@@ -10,7 +11,11 @@ import {
   Edit3,
   RotateCcw,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Shuffle
 } from 'lucide-react';
 
 const FALLBACK_CHALLENGES = {
@@ -106,6 +111,7 @@ const FALLBACK_CHALLENGES = {
 export default function DailyPractice({ level, language = 'english' }) {
   const defaultData = FALLBACK_CHALLENGES[language] || FALLBACK_CHALLENGES.english;
   const [dailyData, setDailyData] = useState(defaultData);
+  const [dayOffset, setDayOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
   const [submittedQuiz, setSubmittedQuiz] = useState(false);
@@ -118,23 +124,33 @@ export default function DailyPractice({ level, language = 'english' }) {
 
   useEffect(() => {
     loadDaily();
-  }, [level, language]);
+  }, [level, language, dayOffset]);
 
   async function loadDaily() {
     try {
       setLoading(true);
-      const data = await api.getDailyPractice(language, level);
+      const data = await api.getDailyPractice(language, level, dayOffset);
       if (data && data.idiom && data.idiom.phrase) {
         setDailyData(data);
         initSentenceBuilder(data);
       } else {
-        const fallback = FALLBACK_CHALLENGES[language] || FALLBACK_CHALLENGES.english;
+        const local = getDailyIdiomAndWord(language, dayOffset);
+        const fallback = {
+          ...defaultData,
+          idiom: local.idiom,
+          date_str: local.dateStr
+        };
         setDailyData(fallback);
         initSentenceBuilder(fallback);
       }
     } catch (err) {
       console.warn('Using local daily practice data:', err);
-      const fallback = FALLBACK_CHALLENGES[language] || FALLBACK_CHALLENGES.english;
+      const local = getDailyIdiomAndWord(language, dayOffset);
+      const fallback = {
+        ...defaultData,
+        idiom: local.idiom,
+        date_str: local.dateStr
+      };
       setDailyData(fallback);
       initSentenceBuilder(fallback);
     } finally {
@@ -186,9 +202,34 @@ export default function DailyPractice({ level, language = 'english' }) {
 
   return (
     <div className="page-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Header with Date & Day Navigation */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              backgroundColor: '#1e3a8a',
+              color: '#ffffff',
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              textTransform: 'uppercase'
+            }}>
+              <Calendar size={14} /> {dailyData?.date_str || 'Today'}
+            </span>
+            {dayOffset === 0 ? (
+              <span className="badge badge-success" style={{ fontSize: '0.72rem', fontWeight: 800 }}>
+                Today's Challenge 🌟
+              </span>
+            ) : (
+              <span className="badge badge-warning" style={{ fontSize: '0.72rem', fontWeight: 700 }}>
+                {dayOffset > 0 ? `Day +${dayOffset}` : `Day ${dayOffset}`}
+              </span>
+            )}
+          </div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>
             {dailyData?.day_title || `Daily ${language.toUpperCase()} Practice Challenge`}
           </h2>
@@ -196,16 +237,59 @@ export default function DailyPractice({ level, language = 'english' }) {
             5 minutes of daily practice locks in natural idioms, sentence patterns, and grammar reflexes.
           </p>
         </div>
-        <button
-          onClick={loadDaily}
-          disabled={loading}
-          className="btn btn-secondary btn-sm"
-          title="Refresh challenge"
-          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-        >
-          <RefreshCw size={14} className={loading ? 'spin' : ''} />
-          <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
-        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setDayOffset(prev => prev - 1)}
+            disabled={loading}
+            className="btn btn-secondary btn-sm"
+            title="Previous Day's Challenge"
+            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            <ChevronLeft size={16} />
+            <span>Prev Day</span>
+          </button>
+
+          {dayOffset !== 0 && (
+            <button
+              onClick={() => setDayOffset(0)}
+              disabled={loading}
+              className="btn btn-sm"
+              style={{
+                backgroundColor: '#1e3a8a',
+                color: '#ffffff',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <span>Today</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setDayOffset(prev => prev + 1)}
+            disabled={loading}
+            className="btn btn-secondary btn-sm"
+            title="Next Day's Challenge"
+            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            <Shuffle size={14} />
+            <span>Next Challenge 🔀</span>
+          </button>
+
+          <button
+            onClick={loadDaily}
+            disabled={loading}
+            className="btn btn-secondary btn-sm"
+            title="Refresh current challenge"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <RefreshCw size={14} className={loading ? 'spin' : ''} />
+            <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid-2">
