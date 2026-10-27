@@ -7,14 +7,21 @@
 
 ## 🚀 Quick Start (1-Click Run)
 
-### Option 1: From Your Desktop Folder
-A folder named **`EnglishAI-Platform`** has been created directly on your Desktop at:
-`C:\Users\ADMIN\OneDrive\Desktop\EnglishAI-Platform` (and mirrored at `C:\Users\ADMIN\Desktop\EnglishAI-Platform`).
-1. Double-click **`Launch_English_AI.bat`**.
-2. The backend server initializes, mounts the app, and opens your default browser automatically at:
-   👉 **`http://127.0.0.1:8000`**
+### ⚡ Super Fast 1-Click Launch with `run.bat`
+From the project folder, simply double-click or run in your terminal:
+```cmd
+run
+```
+*(or run `.\run.bat`)*
 
-### Option 2: Run From Command Line
+This script will automatically:
+1. Boot the FastAPI backend server on port 8000.
+2. Boot the Vite React frontend on port 5173.
+3. Automatically launch your browser at **`http://localhost:5173`**.
+
+---
+
+### Option 2: Run From Command Line Separately
 ```bash
 # Terminal 1: Backend
 cd backend
